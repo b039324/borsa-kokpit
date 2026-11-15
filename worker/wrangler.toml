@@ -2,14 +2,13 @@ name = "borsa-kokpit-api"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
-# KV: önce `npx wrangler kv namespace create KOKPIT` çalıştır, çıkan id'yi aşağıya yaz.
 [[kv_namespaces]]
 binding = "KOKPIT"
-id = "BURAYA_KV_ID"
+id = "8c59949b224d49cb93b60ca302a6a359"
 
 [vars]
-# Virgülle birden fazla adres yazılabilir. Yayında GitHub Pages adresini ekle.
-ALLOWED_ORIGIN = "http://localhost:5173"
+# Virgülle ayrılmış izinli ön yüz adresleri (yol olmadan, yalnız alan adı).
+ALLOWED_ORIGIN = "http://localhost:5173,https://b039324.github.io"
 
 # Gizli değerler dosyaya yazılmaz, komutla eklenir:
 #   npx wrangler secret put APP_PASSWORD
