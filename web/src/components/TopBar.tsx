@@ -1,5 +1,6 @@
 import { useAuth } from "../auth";
 import { useLayout } from "../layout/LayoutProvider";
+import { MarketStrip } from "./MarketStrip";
 
 interface Props {
   drawerOpen: boolean;
@@ -14,6 +15,7 @@ export function TopBar({ drawerOpen, onToggleDrawer }: Props) {
   return (
     <header className="topbar">
       <strong>Borsa Kokpit</strong>
+      <MarketStrip />
       <div className="topbar-right">
         <span className={saveState === "error" ? "save-state error" : "save-state muted"} role="status">
           {SAVE_TEXT[saveState]}

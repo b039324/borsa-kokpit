@@ -534,3 +534,23 @@ button:focus-visible {
 .session-count { font-size: 24px; font-variant-numeric: tabular-nums; margin: 4px 0 8px; }
 .levels-card .up dd { color: var(--up, #1fa971); }
 .levels-card .down dd { color: var(--down, #e0524d); }
+
+/* Üst çubuk piyasa şeridi */
+.market-strip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 0 16px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+.market-strip::-webkit-scrollbar { display: none; }
+.strip-item { display: flex; align-items: baseline; gap: 6px; font-size: 13px; flex: none; }
+.strip-price { font-variant-numeric: tabular-nums; }
+
+/* Sol liste: fiyat + değişim */
+.sym-quote { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; font-size: 12px; cursor: pointer; padding-right: 2px; font-variant-numeric: tabular-nums; }
+.sym-quote .price-chg { margin-left: 0; font-size: 11px; }

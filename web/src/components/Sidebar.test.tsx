@@ -190,4 +190,38 @@ describe("Sidebar", () => {
       await vi.waitFor(() => expect(favPuts.at(-1)).toEqual(["TKFEN"]));
     });
   });
+
+  describe("fiyat ve değişim", () => {
+    it("her satırda fiyat ve yüzde değişimi gösterir (yeşil/kırmızı)", async () => {
+      localStorage.setItem(TOKEN_KEY, "tok");
+      apiMock({ quotes: { THYAO: { price: 110, prevClose: 100 }, ASELS: { price: 90, prevClose: 100 } } });
+      setup();
+      const up = await screen.findByTestId("q-THYAO");
+      expect(up).toHaveTextContent("110,00");
+      expect(up).toHaveTextContent("+10,00%");
+      expect(up.querySelector(".price-chg")).toHaveClass("up");
+      const down = screen.getByTestId("q-ASELS");
+      expect(down).toHaveTextContent("90,00");
+      expect(down).toHaveTextContent("-10,00%");
+      expect(down.querySelector(".price-chg")).toHaveClass("down");
+    });
+
+    it("verisi gelmeyen hisse tire gösterir", async () => {
+      localStorage.setItem(TOKEN_KEY, "tok");
+      apiMock({ quotes: { THYAO: { price: 110, prevClose: 100 } } });
+      setup();
+      await screen.findByTestId("q-THYAO");
+      expect(screen.getByTestId("q-GARAN")).toHaveTextContent("–");
+    });
+
+    it("fiyat satırı hisse butonunun adını bozmaz; fiyata tıklayınca da seçer", async () => {
+      localStorage.setItem(TOKEN_KEY, "tok");
+      apiMock({ quotes: { ASELS: { price: 90, prevClose: 100 } } });
+      setup();
+      const q = await screen.findByTestId("q-ASELS");
+      expect(screen.getByRole("button", { name: "ASELS" })).toBeInTheDocument();
+      await userEvent.click(q);
+      expect(screen.getByTestId("probe")).toHaveTextContent("ASELS");
+    });
+  });
 });

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { searchSymbols, type SearchHit } from "../api";
+import { searchSymbols, type QuoteItem, type SearchHit } from "../api";
 import { SYMBOL_LISTS, type ListKey } from "../data/symbols";
 import { useFavorites } from "../favorites";
+import { nf } from "../format";
+import { useQuotes } from "../hooks/useQuotes";
 import { useSelection } from "../selection";
 import { getToken } from "../storage";
 
@@ -25,7 +27,25 @@ type Remote =
   | { state: "error" }
   | { state: "done"; hits: SearchHit[] };
 
-function Row({ symbol, label, title }: { symbol: string; label?: React.ReactNode; title?: string }) {
+interface QuoteView {
+  ready: boolean;
+  quotes: Record<string, QuoteItem>;
+}
+
+function QuoteCell({ symbol, view }: { symbol: string; view: QuoteView }) {
+  const { select } = useSelection();
+  const q = view.quotes[symbol];
+  const pct = q && q.price !== null && q.prevClose ? ((q.price - q.prevClose) / q.prevClose) * 100 : null;
+  const tone = pct === null || pct === 0 ? "flat" : pct > 0 ? "up" : "down";
+  return (
+    <span className="sym-quote" data-testid={`q-${symbol}`} onClick={() => select(symbol)}>
+      <span className="sym-price">{q && q.price !== null ? nf(q.price) : "–"}</span>
+      <span className={`price-chg ${tone}`}>{pct !== null ? `${pct > 0 ? "+" : ""}${nf(pct)}%` : ""}</span>
+    </span>
+  );
+}
+
+function Row({ symbol, label, title, view }: { symbol: string; label?: React.ReactNode; title?: string; view?: QuoteView }) {
   const { selected, select } = useSelection();
   const fav = useFavorites();
   const on = fav.has(symbol);
@@ -40,6 +60,7 @@ function Row({ symbol, label, title }: { symbol: string; label?: React.ReactNode
       >
         {label ?? symbol}
       </button>
+      {view?.ready && <QuoteCell symbol={symbol} view={view} />}
       {fav.status === "ready" && (
         <button
           type="button"
@@ -88,6 +109,11 @@ export function Sidebar({ lists = SYMBOL_LISTS, search = defaultSearch, debounce
     };
   }, [term, search, debounceMs]);
 
+  // Fiyatlar: aktif liste + favoriler tek istekte (20'şerli parçalarla); seansta 15 sn'de bir yenilenir.
+  const priced = Array.from(new Set([...all, ...fav.symbols]));
+  const qs = useQuotes(priced);
+  const view: QuoteView = { ready: Object.keys(qs.quotes).length > 0 || qs.failed.length > 0, quotes: qs.quotes };
+
   const shown = new Set(items);
   const extra = remote.state === "done" ? remote.hits.filter((h) => !shown.has(h.symbol)) : [];
 
@@ -119,7 +145,7 @@ export function Sidebar({ lists = SYMBOL_LISTS, search = defaultSearch, debounce
         ) : items.length === 0 ? (
           <p className="muted">Listede eşleşen hisse yok.</p>
         ) : (
-          items.map((s) => <Row key={s} symbol={s} />)
+          items.map((s) => <Row key={s} symbol={s} view={view} />)
         )}
       </div>
       {term.length >= 2 && (
@@ -152,7 +178,7 @@ export function Sidebar({ lists = SYMBOL_LISTS, search = defaultSearch, debounce
       ) : (
         <div className="list" aria-label="Favoriler">
           {fav.symbols.map((s) => (
-            <Row key={`fav-${s}`} symbol={s} />
+            <Row key={`fav-${s}`} symbol={s} view={view} />
           ))}
         </div>
       )}
