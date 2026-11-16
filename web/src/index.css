@@ -563,3 +563,12 @@ button:focus-visible {
 .fund-card .price-grid { margin: 4px 0 6px; }
 .fund-card dd.up { color: #1f9d55; }
 .fund-card dd.down { color: #d64545; }
+
+/* Risk */
+.risk-card { padding: 2px; }
+.risk-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.risk-level { font-size: 18px; font-weight: 600; }
+.risk-level.up { color: #1f9d55; }
+.risk-level.down { color: #d64545; }
+.risk-card dd.up { color: #1f9d55; }
+.risk-card dd.down { color: #d64545; }
