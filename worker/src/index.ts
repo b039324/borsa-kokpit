@@ -1,6 +1,9 @@
 import type { Env } from "./types";
 import { allowedOrigin, withCors } from "./cors";
 import { isAuthenticated, safeEqual, signToken } from "./auth";
+import { handleChart, handleMarket, handleQuotes, handleSearch } from "./data";
+import { FAVORITES_KEY, validateFavorites } from "./favorites";
+import { LAYOUT_KEY, MAX_BODY_BYTES, validateLayout } from "./layout";
 
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
 const MAX_FAILED_LOGINS = 5;
@@ -44,6 +47,75 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
   return json({ token, expiresIn: TOKEN_TTL_SECONDS });
 }
 
+// Giriş gerektiren uçlar için ortak kapı. Geçerse null, geçmezse hazır hata yanıtı döner.
+async function guard(request: Request, env: Env): Promise<Response | null> {
+  if (!env.TOKEN_SECRET) return json({ error: "Sunucu yapılandırılmamış" }, 500);
+  if (!(await isAuthenticated(request, env.TOKEN_SECRET))) {
+    return json({ error: "Giriş gerekli" }, 401);
+  }
+  return null;
+}
+
+async function handleLayout(request: Request, env: Env): Promise<Response> {
+  if (request.method === "GET") {
+    const raw = await env.KOKPIT.get(LAYOUT_KEY);
+    if (!raw) return json({ layout: null });
+    try {
+      const checked = validateLayout(JSON.parse(raw));
+      return json({ layout: checked.ok ? checked.layout : null });
+    } catch {
+      return json({ layout: null });
+    }
+  }
+
+  if (request.method === "PUT") {
+    const text = await request.text();
+    if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) {
+      return json({ error: "Düzen çok büyük" }, 413);
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return json({ error: "Geçersiz JSON" }, 400);
+    }
+    const checked = validateLayout(parsed);
+    if (!checked.ok) return json({ error: checked.error }, 400);
+    await env.KOKPIT.put(LAYOUT_KEY, JSON.stringify(checked.layout));
+    return json({ ok: true });
+  }
+
+  return json({ error: "Yöntem desteklenmiyor" }, 405);
+}
+
+async function handleFavorites(request: Request, env: Env): Promise<Response> {
+  if (request.method === "GET") {
+    const raw = await env.KOKPIT.get(FAVORITES_KEY);
+    if (!raw) return json({ symbols: [] });
+    try {
+      const checked = validateFavorites(JSON.parse(raw));
+      return json({ symbols: checked.ok ? checked.symbols : [] });
+    } catch {
+      return json({ symbols: [] });
+    }
+  }
+  if (request.method === "PUT") {
+    const text = await request.text();
+    if (new TextEncoder().encode(text).length > 5_000) return json({ error: "Liste çok büyük" }, 413);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return json({ error: "Geçersiz JSON" }, 400);
+    }
+    const checked = validateFavorites(parsed);
+    if (!checked.ok) return json({ error: checked.error }, 400);
+    await env.KOKPIT.put(FAVORITES_KEY, JSON.stringify({ symbols: checked.symbols }));
+    return json({ ok: true });
+  }
+  return json({ error: "Yöntem desteklenmiyor" }, 405);
+}
+
 async function route(request: Request, env: Env): Promise<Response> {
   const { pathname } = new URL(request.url);
 
@@ -51,11 +123,31 @@ async function route(request: Request, env: Env): Promise<Response> {
   if (pathname === "/api/login") return handleLogin(request, env);
 
   if (pathname === "/api/me") {
-    if (!env.TOKEN_SECRET) return json({ error: "Sunucu yapılandırılmamış" }, 500);
-    if (!(await isAuthenticated(request, env.TOKEN_SECRET))) {
-      return json({ error: "Giriş gerekli" }, 401);
-    }
-    return json({ ok: true });
+    return (await guard(request, env)) ?? json({ ok: true });
+  }
+
+  if (pathname === "/api/layout") {
+    return (await guard(request, env)) ?? handleLayout(request, env);
+  }
+
+  if (pathname === "/api/favorites") {
+    return (await guard(request, env)) ?? handleFavorites(request, env);
+  }
+
+  if (pathname === "/api/market") {
+    return (await guard(request, env)) ?? handleMarket(request);
+  }
+
+  if (pathname === "/api/quotes") {
+    return (await guard(request, env)) ?? handleQuotes(request);
+  }
+
+  if (pathname === "/api/chart") {
+    return (await guard(request, env)) ?? handleChart(request);
+  }
+
+  if (pathname === "/api/search") {
+    return (await guard(request, env)) ?? handleSearch(request);
   }
 
   return json({ error: "Bulunamadı" }, 404);
