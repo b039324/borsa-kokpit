@@ -165,6 +165,31 @@ export async function getFundamentals(token: string, symbol: string, signal?: Ab
   return (await res.json()) as Fundamentals;
 }
 
+export interface Alarm {
+  id: string;
+  symbol: string;
+  dir: "above" | "below";
+  price: number;
+  createdAt: number;
+  triggeredAt: number | null;
+}
+
+export async function getAlarms(token: string): Promise<Alarm[]> {
+  const res = await request("/api/alarms", { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new ApiError(res.status, "Alarmlar alınamadı");
+  const body = (await res.json()) as { alarms?: Alarm[] };
+  return Array.isArray(body.alarms) ? body.alarms : [];
+}
+
+export async function saveAlarms(token: string, alarms: Alarm[]): Promise<void> {
+  const res = await request("/api/alarms", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ alarms }),
+  });
+  if (!res.ok) throw new ApiError(res.status, "Alarmlar kaydedilemedi");
+}
+
 export async function getFavorites(token: string): Promise<string[]> {
   const res = await request("/api/favorites", { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new ApiError(res.status, "Favoriler alınamadı");

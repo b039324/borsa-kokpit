@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { AuthProvider, useAuth } from "./auth";
 import { SelectionProvider } from "./selection";
 import { FavoritesProvider } from "./favorites";
+import { AlarmsProvider } from "./alarms";
 import { LayoutProvider } from "./layout/LayoutProvider";
 import { LoginPage } from "./components/LoginPage";
 import { TopBar } from "./components/TopBar";
@@ -30,9 +31,11 @@ function Shell() {
   return (
     <SelectionProvider>
       <FavoritesProvider>
-        <LayoutProvider>
-          <ShellInner />
-        </LayoutProvider>
+        <AlarmsProvider>
+          <LayoutProvider>
+            <ShellInner />
+          </LayoutProvider>
+        </AlarmsProvider>
       </FavoritesProvider>
     </SelectionProvider>
   );

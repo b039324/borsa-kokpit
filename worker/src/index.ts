@@ -2,6 +2,7 @@ import type { Env } from "./types";
 import { allowedOrigin, withCors } from "./cors";
 import { isAuthenticated, safeEqual, signToken } from "./auth";
 import { handleChart, handleFundamentals, handleMarket, handleQuotes, handleSearch } from "./data";
+import { ALARMS_KEY, validateAlarms } from "./alarms";
 import { FAVORITES_KEY, validateFavorites } from "./favorites";
 import { LAYOUT_KEY, MAX_BODY_BYTES, validateLayout } from "./layout";
 
@@ -116,6 +117,34 @@ async function handleFavorites(request: Request, env: Env): Promise<Response> {
   return json({ error: "Yöntem desteklenmiyor" }, 405);
 }
 
+async function handleAlarms(request: Request, env: Env): Promise<Response> {
+  if (request.method === "GET") {
+    const raw = await env.KOKPIT.get(ALARMS_KEY);
+    if (!raw) return json({ alarms: [] });
+    try {
+      const checked = validateAlarms(JSON.parse(raw));
+      return json({ alarms: checked.ok ? checked.alarms : [] });
+    } catch {
+      return json({ alarms: [] });
+    }
+  }
+  if (request.method === "PUT") {
+    const text = await request.text();
+    if (new TextEncoder().encode(text).length > 10_000) return json({ error: "Liste çok büyük" }, 413);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return json({ error: "Geçersiz JSON" }, 400);
+    }
+    const checked = validateAlarms(parsed);
+    if (!checked.ok) return json({ error: checked.error }, 400);
+    await env.KOKPIT.put(ALARMS_KEY, JSON.stringify({ alarms: checked.alarms }));
+    return json({ ok: true });
+  }
+  return json({ error: "Yöntem desteklenmiyor" }, 405);
+}
+
 async function route(request: Request, env: Env): Promise<Response> {
   const { pathname } = new URL(request.url);
 
@@ -132,6 +161,10 @@ async function route(request: Request, env: Env): Promise<Response> {
 
   if (pathname === "/api/favorites") {
     return (await guard(request, env)) ?? handleFavorites(request, env);
+  }
+
+  if (pathname === "/api/alarms") {
+    return (await guard(request, env)) ?? handleAlarms(request, env);
   }
 
   if (pathname === "/api/market") {

@@ -19,6 +19,8 @@ export const TOKEN_KEY = "kokpit_token";
 
 interface ApiMockOptions {
   favorites?: string[];
+  alarms?: unknown[];
+  alarmsGetStatus?: number;
   market?: unknown[];
   quotes?: Record<string, { price: number; prevClose: number; volume?: number }>;
   layout?: unknown;
@@ -31,10 +33,18 @@ interface ApiMockOptions {
 export function apiMock(opts: ApiMockOptions = {}) {
   const puts: any[] = [];
   const favPuts: string[][] = [];
+  const alarmPuts: any[][] = [];
   let putCall = 0;
   const fn = mockFetch((url, init) => {
     if (url.endsWith("/api/me")) return { status: 200, body: { ok: true } };
     if (url.endsWith("/api/market")) return { status: 200, body: { items: opts.market ?? [] } };
+    if (url.endsWith("/api/alarms")) {
+      if (init?.method === "PUT") {
+        alarmPuts.push(JSON.parse(String(init.body)).alarms);
+        return { status: 200, body: { ok: true } };
+      }
+      return { status: opts.alarmsGetStatus ?? 200, body: { alarms: opts.alarms ?? [] } };
+    }
     if (url.endsWith("/api/favorites")) {
       if (init?.method === "PUT") {
         favPuts.push(JSON.parse(String(init.body)).symbols);
@@ -58,5 +68,5 @@ export function apiMock(opts: ApiMockOptions = {}) {
     return { status: 404 };
   });
   const gets = () => fn.mock.calls.filter(([u, i]) => String(u).endsWith("/api/layout") && !i?.method);
-  return { fn, puts, gets, favPuts };
+  return { fn, puts, gets, favPuts, alarmPuts };
 }
