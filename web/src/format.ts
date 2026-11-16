@@ -21,3 +21,9 @@ export function fmtTime(t: number, off: number, period: string): string {
   return `${dm}.${String(d.getUTCFullYear()).slice(2)}`;
 }
 
+
+// 0,2834 → "28,34%"; signed=true → artışta "+" ekler
+export function pct(ratio: number, signed = false): string {
+  const v = ratio * 100;
+  return `${signed && v > 0 ? "+" : ""}${nf(v)}%`;
+}

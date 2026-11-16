@@ -1,3 +1,4 @@
+import { getFundamentals } from "./fundamentals";
 import { MARKET_ITEMS } from "./market";
 import { YahooError, getChart, getQuote, getQuoteRaw, isPeriod, searchSymbols, type Quote } from "./yahoo";
 
@@ -98,5 +99,20 @@ export async function handleMarket(request: Request): Promise<Response> {
     // Hiçbiri gelmediyse Yahoo'ya ulaşılamıyordur; tek tük eksik varsa kart yine de döner.
     if (results.every((r) => r.status === "rejected")) return json({ error: "Veri kaynağına ulaşılamadı" }, 502);
     return json({ items }, 200, QUOTES_TTL);
+  });
+}
+
+const FUNDAMENTALS_TTL = 3600; // temel veri yavaş değişir → 1 saat
+
+export async function handleFundamentals(request: Request): Promise<Response> {
+  if (request.method !== "GET") return json({ error: "Yöntem desteklenmiyor" }, 405);
+  const symbol = (new URL(request.url).searchParams.get("symbol") ?? "").toUpperCase();
+  if (!SYMBOL_RE.test(symbol)) return json({ error: "Geçersiz sembol" }, 400);
+  return cached(request, FUNDAMENTALS_TTL, async () => {
+    try {
+      return json(await getFundamentals(symbol), 200, FUNDAMENTALS_TTL);
+    } catch (e) {
+      return mapError(e);
+    }
   });
 }

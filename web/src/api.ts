@@ -126,6 +126,45 @@ export async function getChart(
   return (await res.json()) as ChartData;
 }
 
+export interface Fundamentals {
+  symbol: string;
+  name: string | null;
+  currency: string | null;
+  marketCap: number | null;
+  trailingPE: number | null;
+  forwardPE: number | null;
+  priceToBook: number | null;
+  priceToSales: number | null;
+  enterpriseToEbitda: number | null;
+  trailingEps: number | null;
+  bookValue: number | null;
+  dividendYield: number | null;
+  beta: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  fiftyDayAverage: number | null;
+  twoHundredDayAverage: number | null;
+  returnOnEquity: number | null;
+  returnOnAssets: number | null;
+  grossMargins: number | null;
+  operatingMargins: number | null;
+  profitMargins: number | null;
+  revenueGrowth: number | null;
+  earningsGrowth: number | null;
+  debtToEquity: number | null;
+  currentRatio: number | null;
+}
+
+export async function getFundamentals(token: string, symbol: string, signal?: AbortSignal): Promise<Fundamentals> {
+  const res = await request(`/api/fundamentals?symbol=${encodeURIComponent(symbol)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+  if (res.status === 404) throw new ApiError(404, "Hisse bulunamadı");
+  if (!res.ok) throw new ApiError(res.status, "Temel veri alınamadı");
+  return (await res.json()) as Fundamentals;
+}
+
 export async function getFavorites(token: string): Promise<string[]> {
   const res = await request("/api/favorites", { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new ApiError(res.status, "Favoriler alınamadı");
