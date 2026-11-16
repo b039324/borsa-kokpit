@@ -1,9 +1,13 @@
 import { nf } from "../format";
 import { useMarket } from "../hooks/useMarket";
 
+// Şeritte gösterilen kalemler (sıra Worker'dan gelir). Değiştirmek için bu listeyi düzenle.
+const STRIP_KEYS = ["XU100", "XU030", "USDTRY", "EURTRY", "GOLD", "BRENT"];
+
 // Üst çubukta tek satır endeks / kur / emtia şeridi. Veri: useMarket (seansta 15 sn'de bir yenilenir).
 export function MarketStrip() {
-  const { items } = useMarket();
+  const { items: all } = useMarket();
+  const items = all.filter((it) => STRIP_KEYS.includes(it.key));
   if (items.length === 0) return <div className="market-strip" />;
   return (
     <div className="market-strip" aria-label="Piyasa özeti">

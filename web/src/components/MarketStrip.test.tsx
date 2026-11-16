@@ -37,4 +37,20 @@ describe("üst çubuk piyasa şeridi", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(container.querySelectorAll("[data-testid^='strip-']").length).toBe(0);
   });
+
+  it("Banka ve S&P 500 şeritte yok; Brent var", async () => {
+    apiMock({
+      market: [
+        { key: "XU100", label: "BIST 100", decimals: 2, price: 1, prevClose: 1 },
+        { key: "XBANK", label: "BIST Banka", decimals: 2, price: 1, prevClose: 1 },
+        { key: "BRENT", label: "Brent", decimals: 2, price: 80, prevClose: 79 },
+        { key: "SP500", label: "S&P 500", decimals: 2, price: 1, prevClose: 1 },
+      ],
+    });
+    render(<MarketStrip />);
+    await screen.findByTestId("strip-BRENT");
+    expect(screen.getByTestId("strip-XU100")).toBeInTheDocument();
+    expect(screen.queryByTestId("strip-XBANK")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("strip-SP500")).not.toBeInTheDocument();
+  });
 });
