@@ -16,3 +16,47 @@ export function mockFetch(handler: (url: string, init?: RequestInit) => Reply) {
 }
 
 export const TOKEN_KEY = "kokpit_token";
+
+interface ApiMockOptions {
+  favorites?: string[];
+  market?: unknown[];
+  quotes?: Record<string, { price: number; prevClose: number; volume?: number }>;
+  layout?: unknown;
+  layoutGetStatus?: number;
+  // Her PUT için sırayla dönecek durum kodları (bitince 200)
+  putStatuses?: number[];
+}
+
+// /api/me ve /api/layout için sahte Worker. PUT gövdeleri `puts` içinde toplanır.
+export function apiMock(opts: ApiMockOptions = {}) {
+  const puts: any[] = [];
+  const favPuts: string[][] = [];
+  let putCall = 0;
+  const fn = mockFetch((url, init) => {
+    if (url.endsWith("/api/me")) return { status: 200, body: { ok: true } };
+    if (url.endsWith("/api/market")) return { status: 200, body: { items: opts.market ?? [] } };
+    if (url.endsWith("/api/favorites")) {
+      if (init?.method === "PUT") {
+        favPuts.push(JSON.parse(String(init.body)).symbols);
+        return { status: 200, body: { ok: true } };
+      }
+      return { status: 200, body: { symbols: opts.favorites ?? [] } };
+    }
+    if (url.includes("/api/quotes")) {
+      const want = decodeURIComponent(url.split("symbols=")[1] ?? "").split(",");
+      const quotes = want.filter((s) => opts.quotes?.[s]).map((s) => ({ symbol: s, ...opts.quotes![s] }));
+      return { status: 200, body: { quotes, failed: want.filter((s) => !opts.quotes?.[s]) } };
+    }
+    if (url.endsWith("/api/layout")) {
+      if (init?.method === "PUT") {
+        puts.push(JSON.parse(String(init.body)));
+        const status = opts.putStatuses?.[putCall++] ?? 200;
+        return { status, body: status === 200 ? { ok: true } : { error: "hata" } };
+      }
+      return { status: opts.layoutGetStatus ?? 200, body: { layout: opts.layout ?? null } };
+    }
+    return { status: 404 };
+  });
+  const gets = () => fn.mock.calls.filter(([u, i]) => String(u).endsWith("/api/layout") && !i?.method);
+  return { fn, puts, gets, favPuts };
+}

@@ -1,20 +1,39 @@
+import { useCallback, useState } from "react";
 import { AuthProvider, useAuth } from "./auth";
 import { SelectionProvider } from "./selection";
+import { FavoritesProvider } from "./favorites";
+import { LayoutProvider } from "./layout/LayoutProvider";
 import { LoginPage } from "./components/LoginPage";
 import { TopBar } from "./components/TopBar";
 import { Sidebar } from "./components/Sidebar";
 import { Canvas } from "./components/Canvas";
+import { ModuleDrawer } from "./components/ModuleDrawer";
+
+function ShellInner() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  return (
+    <div className="shell">
+      <TopBar drawerOpen={drawerOpen} onToggleDrawer={() => setDrawerOpen((o) => !o)} />
+      <div className="body">
+        <Sidebar />
+        <div className="stage">
+          <Canvas />
+          {drawerOpen && <ModuleDrawer onClose={closeDrawer} />}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Shell() {
   return (
     <SelectionProvider>
-      <div className="shell">
-        <TopBar />
-        <div className="body">
-          <Sidebar />
-          <Canvas />
-        </div>
-      </div>
+      <FavoritesProvider>
+        <LayoutProvider>
+          <ShellInner />
+        </LayoutProvider>
+      </FavoritesProvider>
     </SelectionProvider>
   );
 }
