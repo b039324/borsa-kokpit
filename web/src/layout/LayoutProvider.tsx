@@ -28,6 +28,7 @@ import {
   updateRect,
   type Layout,
   type Rect,
+  type SizedModule,
   type Tab,
 } from "./model";
 
@@ -40,7 +41,7 @@ interface LayoutValue {
   layout: Layout;
   // Etkin sayfa (sekme): modüller ve park kayıtları burada
   page: Tab;
-  addTab: () => void;
+  addTab: (opts?: { name?: string; defs?: SizedModule[] }) => void;
   removeTab: (id: string) => void;
   renameTab: (id: string, name: string) => void;
   moveTab: (id: string, overId: string) => void;
@@ -183,7 +184,10 @@ export function LayoutProvider({ children, saveDelayMs = 400, retryDelayMs = 500
     (id: string, rect: Rect) => apply((l) => updateActivePage(l, (p) => updateRect(p, id, rect))),
     [apply],
   );
-  const addTab = useCallback(() => apply(addTabTo), [apply]);
+  const addTab = useCallback(
+    (opts?: { name?: string; defs?: SizedModule[] }) => apply((l) => addTabTo(l, opts)),
+    [apply],
+  );
   const removeTab = useCallback((id: string) => apply((l) => removeTabFrom(l, id)), [apply]);
   const renameTab = useCallback(
     (id: string, name: string) => apply((l) => renameTabIn(l, id, name)),

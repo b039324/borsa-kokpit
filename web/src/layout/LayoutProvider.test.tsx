@@ -30,7 +30,8 @@ function Probe() {
       <button onClick={l.reload}>reload</button>
       <span data-testid="tabs">{JSON.stringify(l.layout.tabs.map((t) => t.name))}</span>
       <span data-testid="active">{l.page.name}</span>
-      <button onClick={l.addTab}>add tab</button>
+      <button onClick={() => l.addTab()}>add tab</button>
+      <button onClick={() => l.addTab({ name: "Piyasa", defs: [{ id: "a", defaultSize: { w: 10, h: 6 } }] })}>add template</button>
       <button onClick={() => l.selectTab(l.layout.tabs[0].id)}>select first</button>
       <button onClick={() => l.renameTab(l.page.id, "Piyasa")}>rename</button>
       <button onClick={() => l.removeTab(l.page.id)}>remove active</button>
@@ -240,6 +241,16 @@ describe("sekmeler", () => {
     await waitFor(() => expect(last().active).toBe(last().tabs[0].id));
     expect(last().version).toBe(2);
     expect(last().tabs.map((t: { name: string }) => t.name)).toEqual(["Sayfa 1", "Sayfa 2"]);
+  });
+
+  it("şablonlu sekme dolu açılır ve kaydedilir", async () => {
+    const m = apiMock();
+    renderWithApp(<Probe />);
+    await ready();
+    await userEvent.click(screen.getByText("add template"));
+    expect(tabs()).toEqual(["Sayfa 1", "Piyasa"]);
+    expect(items().map((i: { id: string }) => i.id)).toEqual(["a"]);
+    await waitFor(() => expect(m.puts[m.puts.length - 1]?.tabs[1].items).toHaveLength(1));
   });
 
   it("yeniden adlandırma, taşıma ve silme kaydedilir", async () => {

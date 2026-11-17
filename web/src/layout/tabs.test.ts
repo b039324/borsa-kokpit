@@ -3,6 +3,7 @@ import {
   MAX_TABS,
   activePage,
   addTab,
+  pageFromModules,
   emptyLayout,
   moveTab,
   removeTab,
@@ -205,5 +206,72 @@ describe("sanitizeLayout (sekmeli)", () => {
   it("sekme içindeki bozuk modül kayıtlarını atar", () => {
     const t = { ...tab("a"), items: [{ id: "ok", x: 0, y: 0, w: 5, h: 5 }, { id: "x", x: -1, y: 0, w: 5, h: 5 }] };
     expect(sanitizeLayout({ version: 2, tabs: [t] }).tabs[0].items.map((i) => i.id)).toEqual(["ok"]);
+  });
+});
+
+describe("addTab: şablon ve ad", () => {
+  const defs = [
+    { id: "a", defaultSize: { w: 10, h: 6 } },
+    { id: "b", defaultSize: { w: 10, h: 6 } },
+    { id: "a", defaultSize: { w: 10, h: 6 } }, // yinelenen tek kez eklenir
+  ];
+
+  it("şablon modülleriyle dolu sayfa açar ve etkin yapar", () => {
+    const l = addTab(emptyLayout(), { name: "Hisse", defs });
+    expect(names(l)).toEqual(["Sayfa 1", "Hisse"]);
+    expect(l.active).toBe(l.tabs[1].id);
+    expect(l.tabs[1].items.map((i) => i.id)).toEqual(["a", "b"]);
+  });
+
+  it("modüller çakışmadan yerleşir", () => {
+    const [a, b] = addTab(emptyLayout(), { defs }).tabs[1].items;
+    const overlap = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    expect(overlap).toBe(false);
+  });
+
+  it("kimlik yine kullanılmayan 'sayfa-N' olur; diğer sekmelere dokunmaz", () => {
+    const start = L([tab("sayfa-1", "A", ["x"])]);
+    const l = addTab(start, { name: "Piyasa", defs });
+    expect(ids(l)).toEqual(["sayfa-1", "sayfa-2"]);
+    expect(l.tabs[0]).toBe(start.tabs[0]);
+  });
+
+  it("aynı ad varsa numara ekler", () => {
+    let l = addTab(emptyLayout(), { name: "Hisse" });
+    l = addTab(l, { name: "Hisse" });
+    l = addTab(l, { name: "Hisse" });
+    expect(names(l)).toEqual(["Sayfa 1", "Hisse", "Hisse 2", "Hisse 3"]);
+  });
+
+  it("uzun ad kesilir, boş ad varsayılana döner", () => {
+    const long = addTab(emptyLayout(), { name: "x".repeat(40) });
+    expect(long.tabs[1].name).toBe("x".repeat(24));
+    expect(names(addTab(emptyLayout(), { name: "   " }))).toEqual(["Sayfa 1", "Sayfa 2"]);
+  });
+
+  it("ek ad uzunluk sınırını aşmaz", () => {
+    let l = addTab(emptyLayout(), { name: "y".repeat(24) });
+    l = addTab(l, { name: "y".repeat(24) });
+    expect(l.tabs[2].name.length).toBeLessThanOrEqual(24);
+    expect(l.tabs[2].name).not.toBe(l.tabs[1].name);
+  });
+
+  it("8 sekmede şablonlu ekleme de yapılmaz", () => {
+    let l = emptyLayout();
+    for (let i = 0; i < 7; i++) l = addTab(l);
+    expect(addTab(l, { name: "Hisse", defs })).toBe(l);
+  });
+});
+
+describe("pageFromModules", () => {
+  it("modülleri sırayla, ızgaraya taşmadan yerleştirir", () => {
+    const defs = Array.from({ length: 6 }, (_, i) => ({ id: `m${i}`, defaultSize: { w: 40, h: 10 } }));
+    const p = pageFromModules(defs, 96);
+    expect(p.items.map((i) => i.id)).toEqual(["m0", "m1", "m2", "m3", "m4", "m5"]);
+    expect(p.items.every((i) => i.x + i.w <= 96)).toBe(true);
+    expect(p.parked).toEqual({});
+  });
+  it("boş liste boş sayfa verir", () => {
+    expect(pageFromModules([])).toEqual({ items: [], parked: {} });
   });
 });

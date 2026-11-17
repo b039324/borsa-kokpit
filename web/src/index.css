@@ -10,6 +10,18 @@
   color-scheme: dark;
 }
 
+:root[data-theme="light"] {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --line: #d6dae1;
+  --text: #1b1f27;
+  --muted: #5d6675;
+  --accent: #2563eb;
+  --danger: #dc2626;
+  --dot: #cfd4dc;
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -717,7 +729,7 @@ button:focus-visible {
 .pz-field { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
 .pz-field input { font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; width: 100%; }
 .pz-last { margin: 6px 0; font: inherit; background: none; border: 1px solid var(--line); color: inherit; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
-.pz-warn { margin: 6px 0; padding: 4px 8px; border-radius: 4px; background: rgba(214,69,69,.15); color: #f0a0a0; }
+.pz-warn { margin: 6px 0; padding: 4px 8px; border-radius: 4px; background: rgba(214,69,69,.15); color: var(--danger); }
 
 /* göreli güç / karşılaştırma grafiği */
 .line-chart { width: 100%; height: 160px; display: block; margin: 6px 0; }
@@ -730,3 +742,10 @@ button:focus-visible {
 .cmp-key-bench::before { background: #e0a030; }
 .cmp-pick select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
 .chart-bar button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }
+
+/* + menüsü ve tema düğmesi */
+.tab-add-wrap { position: relative; }
+.tab-menu { position: absolute; top: 100%; left: 0; z-index: 30; min-width: 190px; display: flex; flex-direction: column; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.tab-menu button { text-align: left; border: none; padding: 6px 10px; white-space: nowrap; }
+.tab-menu button:hover { background: rgba(128,128,128,.15); }
+.theme-toggle { padding: 4px 8px; line-height: 1; }

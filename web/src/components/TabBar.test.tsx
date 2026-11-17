@@ -40,9 +40,10 @@ describe("TabBar", () => {
     await waitFor(() => expect(lastPut(m)?.active).toBe("b"));
   });
 
-  it("'+' boş yeni sayfa açar ve etkin yapar", async () => {
+  it("'+' menüsünden 'Boş sayfa' boş yeni sayfa açar ve etkin yapar", async () => {
     const m = await setup(layout([tab("a", "Hisse", 2)]));
     await userEvent.click(screen.getByRole("button", { name: "Yeni sayfa" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Boş sayfa" }));
     expect(tabNames()).toEqual(["Hisse", "Sayfa 1"]);
     expect(screen.getByRole("tab", { name: /Sayfa 1/ })).toHaveAttribute("aria-selected", "true");
     await waitFor(() => expect(lastPut(m)?.tabs[1].items).toEqual([]));
@@ -127,5 +128,56 @@ describe("TabBar", () => {
     expect(screen.getAllByRole("tab")[0]).toHaveAttribute("draggable", "true");
     await userEvent.dblClick(screen.getAllByRole("tab")[0]);
     expect(screen.getAllByRole("tab")[0]).toHaveAttribute("draggable", "false");
+  });
+});
+
+describe("TabBar: sayfa şablonları", () => {
+  it("'+' menüsü boş sayfa ve üç şablonu listeler; seçilince menü kapanır", async () => {
+    await setup(layout([tab("a", "A")]));
+    expect(screen.queryByRole("menu")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Yeni sayfa" }));
+    const items = screen.getAllByRole("menuitem").map((e) => e.textContent);
+    expect(items[0]).toBe("Boş sayfa");
+    expect(items.slice(1).map((t) => t!.replace(/\s*\(.*\)$/, ""))).toEqual(["Hisse", "Piyasa", "Analiz"]);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Boş sayfa" }));
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("şablon seçilince modülleriyle dolu, şablon adlı yeni sayfa açılır ve kaydedilir", async () => {
+    const m = await setup(layout([tab("a", "A")]));
+    await userEvent.click(screen.getByRole("button", { name: "Yeni sayfa" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: /^Piyasa/ }));
+    expect(tabNames()).toEqual(["A", "Piyasa"]);
+    expect(screen.getByRole("tab", { name: /Piyasa/ })).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => {
+      const put = lastPut(m);
+      expect(put?.tabs[1].name).toBe("Piyasa");
+      expect(put.tabs[1].items.map((i: { id: string }) => i.id)).toEqual([
+        "isi-haritasi",
+        "en-cok-hareket",
+        "piyasa-genisligi",
+        "hacim-patlamasi",
+        "seans-durumu",
+      ]);
+    });
+  });
+
+  it("Escape ve dışarı tıklama menüyü kapatır; sayfa eklenmez", async () => {
+    await setup(layout([tab("a", "A")]));
+    await userEvent.click(screen.getByRole("button", { name: "Yeni sayfa" }));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Yeni sayfa" }));
+    await userEvent.click(document.body);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(tabNames()).toEqual(["A"]);
+  });
+
+  it("'+' düğmesi menünün açık olduğunu bildirir", async () => {
+    await setup(layout([tab("a", "A")]));
+    const plus = screen.getByRole("button", { name: "Yeni sayfa" });
+    expect(plus).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(plus);
+    expect(plus).toHaveAttribute("aria-expanded", "true");
   });
 });

@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import { useLayout } from "../layout/LayoutProvider";
 import { MAX_TABS, MAX_TAB_NAME } from "../layout/model";
+import { TEMPLATES, resolveTemplate } from "../layout/templates";
+import { registry as defaultRegistry } from "../modules";
+import type { Registry } from "../modules/registry";
 
 const DRAG_TYPE = "text/plain";
 
 // Sayfa sekmeleri: tıkla = seç, çift tıkla = yeniden adlandır, sürükle = sırala, × = sil, + = yeni boş sayfa.
-export function TabBar() {
+export function TabBar({ registry = defaultRegistry }: { registry?: Registry }) {
   const { status, layout, addTab, removeTab, renameTab, moveTab, selectTab } = useLayout();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const addRef = useRef<HTMLDivElement>(null);
   // Enter/Escape ile çıkınca ardından gelen blur ikinci kez kaydetmesin.
   const done = useRef(false);
 
@@ -21,6 +26,21 @@ export function TabBar() {
       inputRef.current?.select();
     }
   }, [editing]);
+
+  // "+" menüsü: Escape ya da dışarı tıklayınca kapanır.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: globalThis.KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    const onDown = (e: MouseEvent) => {
+      if (!addRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [menuOpen]);
 
   if (status !== "ready") return null;
   const single = layout.tabs.length <= 1;
@@ -133,16 +153,50 @@ export function TabBar() {
           </div>
         );
       })}
-      <button
-        type="button"
-        className="tab-add"
-        aria-label="Yeni sayfa"
-        title={layout.tabs.length >= MAX_TABS ? `En çok ${MAX_TABS} sayfa` : "Yeni sayfa"}
-        disabled={layout.tabs.length >= MAX_TABS}
-        onClick={addTab}
-      >
-        +
-      </button>
+      <div className="tab-add-wrap" ref={addRef}>
+        <button
+          type="button"
+          className="tab-add"
+          aria-label="Yeni sayfa"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          title={layout.tabs.length >= MAX_TABS ? `En çok ${MAX_TABS} sayfa` : "Yeni sayfa"}
+          disabled={layout.tabs.length >= MAX_TABS}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          +
+        </button>
+        {menuOpen && (
+          <div className="tab-menu" role="menu">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                addTab();
+              }}
+            >
+              Boş sayfa
+            </button>
+            {TEMPLATES.map((t) => {
+              const defs = resolveTemplate(t, registry);
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    addTab({ name: t.label, defs });
+                  }}
+                >
+                  {t.label} <span className="muted">({defs.length} modül)</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

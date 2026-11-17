@@ -10,6 +10,7 @@ import { Sidebar } from "./components/Sidebar";
 import { Canvas } from "./components/Canvas";
 import { ModuleDrawer } from "./components/ModuleDrawer";
 import { TabBar } from "./components/TabBar";
+import { ThemeProvider } from "./theme";
 
 function ShellInner() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -64,8 +65,10 @@ function Gate() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Gate />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Gate />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

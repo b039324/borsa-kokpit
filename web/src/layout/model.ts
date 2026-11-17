@@ -234,14 +234,42 @@ export function selectTab(layout: Layout, id: string): Layout {
   return { ...layout, active: id };
 }
 
-// Yeni boş sayfa; adı ve kimliği kullanılmayan en küçük numaradan türer. Etkin sayfa olur.
-export function addTab(layout: Layout): Layout {
+export interface SizedModule {
+  id: string;
+  defaultSize: { w: number; h: number };
+}
+
+// Modülleri varsayılan boyutlarıyla, çakışmadan sırayla yerleştirilmiş bir sayfa kurar.
+export function pageFromModules(defs: SizedModule[], cols: number = MIN_COLS): Page {
+  let page = emptyPage();
+  for (const d of defs) {
+    if (!isActive(page, d.id)) page = activate(page, d.id, d.defaultSize, cols);
+  }
+  return page;
+}
+
+// Aynı ad varsa " 2", " 3"… ekler (24 karakter sınırı içinde).
+function uniqueName(base: string, used: Set<string>): string {
+  if (!used.has(base)) return base;
+  for (let n = 2; ; n++) {
+    const suffix = ` ${n}`;
+    const name = base.slice(0, MAX_TAB_NAME - suffix.length) + suffix;
+    if (!used.has(name)) return name;
+  }
+}
+
+// Yeni sayfa; ad ve kimlik kullanılmayan en küçük numaradan türer. Etkin sayfa olur.
+// `defs` verilirse sayfa o modüllerle dolu açılır (şablon), `name` verilirse sekme adı olur.
+export function addTab(layout: Layout, opts: { name?: string; defs?: SizedModule[] } = {}): Layout {
   if (layout.tabs.length >= MAX_TABS) return layout;
   const usedIds = new Set(layout.tabs.map((t) => t.id));
   const usedNames = new Set(layout.tabs.map((t) => t.name));
   let n = 1;
   while (usedIds.has(`sayfa-${n}`) || usedNames.has(`Sayfa ${n}`)) n++;
-  const tab: Tab = { id: `sayfa-${n}`, name: `Sayfa ${n}`, ...emptyPage() };
+  const given = typeof opts.name === "string" ? opts.name.trim().slice(0, MAX_TAB_NAME) : "";
+  const name = given ? uniqueName(given, usedNames) : `Sayfa ${n}`;
+  const page = Array.isArray(opts.defs) ? pageFromModules(opts.defs) : emptyPage();
+  const tab: Tab = { id: `sayfa-${n}`, name, ...page };
   return { ...layout, active: tab.id, tabs: [...layout.tabs, tab] };
 }
 
