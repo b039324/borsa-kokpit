@@ -718,3 +718,15 @@ button:focus-visible {
 .pz-field input { font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; width: 100%; }
 .pz-last { margin: 6px 0; font: inherit; background: none; border: 1px solid var(--line); color: inherit; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 .pz-warn { margin: 6px 0; padding: 4px 8px; border-radius: 4px; background: rgba(214,69,69,.15); color: #f0a0a0; }
+
+/* göreli güç / karşılaştırma grafiği */
+.line-chart { width: 100%; height: 160px; display: block; margin: 6px 0; }
+.lc-line { stroke-width: 2; stroke-linejoin: round; }
+.lc-line.rs, .lc-line.cmp-stock { stroke: var(--accent); }
+.lc-line.cmp-bench { stroke: #e0a030; }
+.lc-base { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+.cmp-key-stock::before, .cmp-key-bench::before { content: ""; display: inline-block; width: 10px; height: 3px; margin-right: 6px; vertical-align: middle; }
+.cmp-key-stock::before { background: var(--accent); }
+.cmp-key-bench::before { background: #e0a030; }
+.cmp-pick select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+.chart-bar button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }

@@ -1,3 +1,5 @@
+import { MARKET_ITEMS } from "./market";
+
 // Yahoo Finance (resmi olmayan) istemcisi. Fetch dışarıdan verilebilir → testte sahte yanıt kullanılır.
 
 export type PeriodKey = "1g" | "1h" | "1a" | "3a" | "6a" | "1y" | "5y";
@@ -76,7 +78,8 @@ async function getJson(path: string, f: FetchLike): Promise<any> {
   throw new YahooError("upstream", last);
 }
 
-const toYahoo = (symbol: string) => `${symbol}.IS`;
+// Piyasa kalemleri (USDTRY, GOLD, SP500…) kendi Yahoo sembolüne çevrilir; geri kalanı BIST hissesidir.
+const toYahoo = (symbol: string) => MARKET_ITEMS.find((m) => m.key === symbol)?.yahoo ?? `${symbol}.IS`;
 
 export function normalizeChart(raw: any, symbol: string, period: PeriodKey): ChartResult {
   const err = raw?.chart?.error;

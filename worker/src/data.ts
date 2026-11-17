@@ -1,5 +1,6 @@
 import { getFundamentals } from "./fundamentals";
 import { MARKET_ITEMS } from "./market";
+import { computeStats, type Stats } from "./stats";
 import { YahooError, getChart, getQuote, getQuoteRaw, isPeriod, searchSymbols, type Quote } from "./yahoo";
 
 const SYMBOL_RE = /^[A-Z0-9]{2,8}$/;
@@ -84,6 +85,29 @@ export async function handleQuotes(request: Request): Promise<Response> {
       return allNotFound ? json({ quotes, failed }, 200, QUOTES_TTL) : json({ error: "Veri kaynağına ulaşılamadı" }, 502);
     }
     return json({ quotes, failed }, 200, QUOTES_TTL);
+  });
+}
+
+const STATS_TTL = 300; // geçmiş yavaş değişir; 5 dk önbellek yeterli
+
+export async function handleStats(request: Request): Promise<Response> {
+  if (request.method !== "GET") return json({ error: "Yöntem desteklenmiyor" }, 405);
+  const raw = new URL(request.url).searchParams.get("symbols") ?? "";
+  const symbols = [...new Set(raw.toUpperCase().split(",").filter(Boolean))];
+  if (symbols.length === 0) return json({ error: "symbols gerekli" }, 400);
+  if (symbols.length > MAX_QUOTES) return json({ error: `En fazla ${MAX_QUOTES} sembol` }, 400);
+  if (!symbols.every((s) => SYMBOL_RE.test(s))) return json({ error: "Geçersiz sembol" }, 400);
+
+  return cached(request, STATS_TTL, async () => {
+    const results = await Promise.allSettled(symbols.map((s) => getChart(s, "3a")));
+    const stats: Stats[] = [];
+    const failed: string[] = [];
+    results.forEach((r, i) => (r.status === "fulfilled" ? stats.push(computeStats(r.value)) : failed.push(symbols[i])));
+    if (stats.length === 0 && failed.length > 0) {
+      const allNotFound = results.every((r) => r.status === "rejected" && r.reason instanceof YahooError && r.reason.kind === "notfound");
+      return allNotFound ? json({ stats, failed }, 200, STATS_TTL) : json({ error: "Veri kaynağına ulaşılamadı" }, 502);
+    }
+    return json({ stats, failed }, 200, STATS_TTL);
   });
 }
 

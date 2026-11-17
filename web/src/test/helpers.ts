@@ -23,6 +23,8 @@ interface ApiMockOptions {
   alarmsGetStatus?: number;
   market?: unknown[];
   quotes?: Record<string, { price: number; prevClose: number; volume?: number }>;
+  stats?: Record<string, { price?: number; prevClose?: number; volume?: number; avgVolume?: number; vol?: number }>;
+  statsGetStatus?: number;
   layout?: unknown;
   layoutGetStatus?: number;
   // Her PUT için sırayla dönecek durum kodları (bitince 200)
@@ -51,6 +53,14 @@ export function apiMock(opts: ApiMockOptions = {}) {
         return { status: 200, body: { ok: true } };
       }
       return { status: 200, body: { symbols: opts.favorites ?? [] } };
+    }
+    if (url.includes("/api/stats")) {
+      const want = decodeURIComponent(url.split("symbols=")[1] ?? "").split(",");
+      const st = opts.stats ?? {};
+      const stats = want
+        .filter((x) => st[x])
+        .map((x) => ({ symbol: x, price: null, prevClose: null, volume: null, avgVolume: null, vol: null, ...st[x] }));
+      return { status: opts.statsGetStatus ?? 200, body: { stats, failed: want.filter((x) => !st[x]) } };
     }
     if (url.includes("/api/quotes")) {
       const want = decodeURIComponent(url.split("symbols=")[1] ?? "").split(",");

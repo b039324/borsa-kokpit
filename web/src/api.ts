@@ -231,6 +231,31 @@ export async function getQuotes(token: string, symbols: string[], signal?: Abort
   return out;
 }
 
+export interface StatsItem {
+  symbol: string;
+  price: number | null;
+  prevClose: number | null;
+  volume: number | null; // son seansın toplam lotu
+  avgVolume: number | null; // önceki 20 seansın ortalaması
+  vol: number | null; // yıllık oynaklık (oran)
+}
+
+export async function getStats(token: string, symbols: string[], signal?: AbortSignal): Promise<{ stats: StatsItem[]; failed: string[] }> {
+  const out = { stats: [] as StatsItem[], failed: [] as string[] };
+  for (let i = 0; i < symbols.length; i += QUOTES_PER_CALL) {
+    const chunk = symbols.slice(i, i + QUOTES_PER_CALL);
+    const res = await request(`/api/stats?symbols=${encodeURIComponent(chunk.join(","))}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    });
+    if (!res.ok) throw new ApiError(res.status, "İstatistikler alınamadı");
+    const body = (await res.json()) as { stats?: StatsItem[]; failed?: string[] };
+    out.stats.push(...(body.stats ?? []));
+    out.failed.push(...(body.failed ?? []));
+  }
+  return out;
+}
+
 export interface MarketItem {
   key: string;
   label: string;
