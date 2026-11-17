@@ -27,3 +27,10 @@ export function pct(ratio: number, signed = false): string {
   const v = ratio * 100;
   return `${signed && v > 0 ? "+" : ""}${nf(v)}%`;
 }
+
+// Unix saniye + borsa saat dilimi farkı (sn) → "14.11.26"
+export function fmtDay(t: number, gmtoffset: number): string {
+  const d = new Date((t + gmtoffset) * 1000);
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${two(d.getUTCDate())}.${two(d.getUTCMonth() + 1)}.${String(d.getUTCFullYear()).slice(2)}`;
+}

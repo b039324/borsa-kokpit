@@ -1,13 +1,8 @@
 import { useChart } from "../hooks/useChart";
-import { pct } from "../format";
+import { fmtDay, pct } from "../format";
 import { riskStats } from "../risk/stats";
 import type { ModuleDef, ModuleProps } from "./types";
 
-const two = (n: number) => String(n).padStart(2, "0");
-function day(t: number, off: number): string {
-  const d = new Date((t + off) * 1000);
-  return `${two(d.getUTCDate())}.${two(d.getUTCMonth() + 1)}.${String(d.getUTCFullYear()).slice(2)}`;
-}
 const cap = (s: string) => s.charAt(0).toLocaleUpperCase("tr-TR") + s.slice(1);
 
 function Risk({ symbol }: ModuleProps) {
@@ -34,9 +29,9 @@ function Risk({ symbol }: ModuleProps) {
         <dd data-testid="r-maxdd" className="down">{pct(s.maxDrawdown)}</dd>
         <dt>Zirveden bugünkü uzaklık</dt>
         <dd data-testid="r-curdd">{pct(s.currentDrawdown)}</dd>
-        <dt>En kötü gün ({day(s.worst.t, data.gmtoffset)})</dt>
+        <dt>En kötü gün ({fmtDay(s.worst.t, data.gmtoffset)})</dt>
         <dd data-testid="r-worst" className="down">{pct(s.worst.ret)}</dd>
-        <dt>En iyi gün ({day(s.best.t, data.gmtoffset)})</dt>
+        <dt>En iyi gün ({fmtDay(s.best.t, data.gmtoffset)})</dt>
         <dd data-testid="r-best" className="up">{pct(s.best.ret, true)}</dd>
         <dt>%95 günlük VaR</dt>
         <dd data-testid="r-var">{pct(s.var95)}</dd>
