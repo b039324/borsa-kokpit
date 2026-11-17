@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Canvas } from "./Canvas";
+import { TabBar } from "./TabBar";
 import { createRegistry } from "../modules/registry";
 import type { ModuleDef, ModuleProps } from "../modules/types";
 import { useSelection } from "../selection";
@@ -119,8 +120,8 @@ describe("Canvas", () => {
     setup();
     await userEvent.click(await screen.findByRole("button", { name: "Kapat: Modül A" }));
     await waitFor(() => expect(m.puts).toHaveLength(1));
-    expect(m.puts[0].items.map((i: { id: string }) => i.id)).toEqual(["silinmis-modul"]);
-    expect(Object.keys(m.puts[0].parked)).toEqual(["a"]);
+    expect(m.puts[0].tabs[0].items.map((i: { id: string }) => i.id)).toEqual(["silinmis-modul"]);
+    expect(Object.keys(m.puts[0].tabs[0].parked)).toEqual(["a"]);
   });
 
   it("çerçevedeki × modülü kapatır ve kaydeder", async () => {
@@ -139,5 +140,32 @@ describe("Canvas", () => {
     apiMock({ layout: SAVED });
     await userEvent.click(screen.getByRole("button", { name: "Tekrar dene" }));
     expect(await screen.findByText("A-içerik")).toBeInTheDocument();
+  });
+});
+
+describe("Canvas + sekmeler", () => {
+  it("her sekme kendi modüllerini gösterir; hisse modülü hisse seçilmediyse uyarı verir", async () => {
+    apiMock({
+      layout: {
+        version: 2,
+        active: "t1",
+        tabs: [
+          { id: "t1", name: "Bir", items: [{ id: "a", x: 0, y: 0, w: 10, h: 6 }], parked: {} },
+          { id: "t2", name: "İki", items: [{ id: "b", x: 0, y: 0, w: 10, h: 6 }], parked: {} },
+        ],
+      },
+    });
+    renderWithApp(
+      <>
+        <TabBar />
+        <Canvas registry={registry} />
+      </>,
+    );
+    expect(await screen.findByText("A-içerik")).toBeInTheDocument();
+    expect(screen.queryByText(/^B:/)).toBeNull();
+
+    await userEvent.click(screen.getByRole("tab", { name: /İki/ }));
+    expect(screen.queryByText("A-içerik")).toBeNull();
+    expect(screen.getByText("Bir hisse seç.")).toBeInTheDocument();
   });
 });

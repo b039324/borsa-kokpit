@@ -69,7 +69,7 @@ describe("ModuleDrawer", () => {
     expect(screen.getByRole("switch", { name: "Modül A" })).toBeChecked();
     expect(await screen.findByText("A-içerik")).toBeInTheDocument();
     await waitFor(() => expect(m.puts).toHaveLength(1));
-    expect(m.puts[0].items).toEqual([{ id: "a", x: 0, y: 0, w: 10, h: 6 }]);
+    expect(m.puts[0].tabs[0].items).toEqual([{ id: "a", x: 0, y: 0, w: 10, h: 6 }]);
   });
 
   it("anahtarı kapatınca modül kalkar", async () => {

@@ -13,7 +13,7 @@ export function ModuleDrawer({
   onClose: () => void;
   registry?: Registry;
 }) {
-  const { status, layout, toggle } = useLayout();
+  const { status, page, toggle } = useLayout();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -23,7 +23,7 @@ export function ModuleDrawer({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const activeCount = registry.list.filter((d) => isActive(layout, d.id)).length;
+  const activeCount = registry.list.filter((d) => isActive(page, d.id)).length;
 
   return (
     <aside className="drawer" role="dialog" aria-label="Modül ekle/çıkar" id="module-drawer">
@@ -45,7 +45,7 @@ export function ModuleDrawer({
                     type="checkbox"
                     role="switch"
                     aria-label={def.title}
-                    checked={isActive(layout, def.id)}
+                    checked={isActive(page, def.id)}
                     onChange={() => toggle(def)}
                   />
                   <span className="drawer-name">{def.title}</span>
@@ -54,6 +54,7 @@ export function ModuleDrawer({
               </li>
             ))}
           </ul>
+          <p className="muted">Sayfa: {page.name}</p>
           <p className="muted">
             {activeCount}/{registry.list.length} modül açık
           </p>

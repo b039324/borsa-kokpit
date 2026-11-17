@@ -29,7 +29,7 @@ function useWidth(ref: RefObject<HTMLElement>): number {
 }
 
 export function Canvas({ registry = defaultRegistry }: { registry?: Registry }) {
-  const { status, layout, reload, close, commitRect } = useLayout();
+  const { status, page, reload, close, commitRect } = useLayout();
   const { selected } = useSelection();
   const ref = useRef<HTMLElement>(null);
   const width = useWidth(ref);
@@ -38,7 +38,7 @@ export function Canvas({ registry = defaultRegistry }: { registry?: Registry }) 
   const cols = Math.max(MIN_COLS, Math.floor(width / GRID_SIZE));
 
   // Koddan silinmiş modüllerin kaydı sunucuda kalır ama çizilmez.
-  const placed = layout.items.flatMap((item) => {
+  const placed = page.items.flatMap((item) => {
     const def = registry.get(item.id);
     return def ? [{ item, def }] : [];
   });
@@ -85,6 +85,7 @@ export function Canvas({ registry = defaultRegistry }: { registry?: Registry }) 
             </div>
           )}
           <GridLayout
+            key={page.id}
             className="layout"
             layout={gridItems}
             cols={cols}

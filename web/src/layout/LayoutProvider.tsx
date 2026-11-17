@@ -14,13 +14,21 @@ import { getToken } from "../storage";
 import type { ModuleDef } from "../modules/types";
 import {
   activate,
+  activePage,
+  addTab as addTabTo,
   deactivate,
   emptyLayout,
   isActive,
+  moveTab as moveTabIn,
+  removeTab as removeTabFrom,
+  renameTab as renameTabIn,
   sanitizeLayout,
+  selectTab as selectTabIn,
+  updateActivePage,
   updateRect,
   type Layout,
   type Rect,
+  type Tab,
 } from "./model";
 
 export type LoadStatus = "loading" | "ready" | "error";
@@ -30,6 +38,13 @@ interface LayoutValue {
   status: LoadStatus;
   saveState: SaveState;
   layout: Layout;
+  // Etkin sayfa (sekme): modüller ve park kayıtları burada
+  page: Tab;
+  addTab: () => void;
+  removeTab: (id: string) => void;
+  renameTab: (id: string, name: string) => void;
+  moveTab: (id: string, overId: string) => void;
+  selectTab: (id: string) => void;
   toggle: (def: ModuleDef) => void;
   close: (id: string) => void;
   commitRect: (id: string, rect: Rect) => void;
@@ -154,19 +169,49 @@ export function LayoutProvider({ children, saveDelayMs = 400, retryDelayMs = 500
   const toggle = useCallback(
     (def: ModuleDef) =>
       apply((l) =>
-        isActive(l, def.id) ? deactivate(l, def.id) : activate(l, def.id, def.defaultSize),
+        updateActivePage(l, (p) =>
+          isActive(p, def.id) ? deactivate(p, def.id) : activate(p, def.id, def.defaultSize),
+        ),
       ),
     [apply],
   );
-  const close = useCallback((id: string) => apply((l) => deactivate(l, id)), [apply]);
-  const commitRect = useCallback(
-    (id: string, rect: Rect) => apply((l) => updateRect(l, id, rect)),
+  const close = useCallback(
+    (id: string) => apply((l) => updateActivePage(l, (p) => deactivate(p, id))),
     [apply],
   );
+  const commitRect = useCallback(
+    (id: string, rect: Rect) => apply((l) => updateActivePage(l, (p) => updateRect(p, id, rect))),
+    [apply],
+  );
+  const addTab = useCallback(() => apply(addTabTo), [apply]);
+  const removeTab = useCallback((id: string) => apply((l) => removeTabFrom(l, id)), [apply]);
+  const renameTab = useCallback(
+    (id: string, name: string) => apply((l) => renameTabIn(l, id, name)),
+    [apply],
+  );
+  const moveTab = useCallback(
+    (id: string, overId: string) => apply((l) => moveTabIn(l, id, overId)),
+    [apply],
+  );
+  const selectTab = useCallback((id: string) => apply((l) => selectTabIn(l, id)), [apply]);
 
   const value = useMemo(
-    () => ({ status, saveState, layout, toggle, close, commitRect, reload: () => void load() }),
-    [status, saveState, layout, toggle, close, commitRect, load],
+    () => ({
+      status,
+      saveState,
+      layout,
+      page: activePage(layout),
+      addTab,
+      removeTab,
+      renameTab,
+      moveTab,
+      selectTab,
+      toggle,
+      close,
+      commitRect,
+      reload: () => void load(),
+    }),
+    [status, saveState, layout, addTab, removeTab, renameTab, moveTab, selectTab, toggle, close, commitRect, load],
   );
 
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;

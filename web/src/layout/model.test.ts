@@ -4,18 +4,19 @@ import {
   activate,
   deactivate,
   emptyLayout,
+  emptyPage,
   findFreeSpot,
   isActive,
   overlaps,
   sanitizeLayout,
   updateRect,
-  type Layout,
+  type Page,
 } from "./model";
 
 const size = { w: 20, h: 10 };
 
-function layoutOf(items: Layout["items"], parked: Layout["parked"] = {}): Layout {
-  return { version: 1, items, parked };
+function layoutOf(items: Page["items"], parked: Page["parked"] = {}): Page {
+  return { items, parked };
 }
 
 describe("overlaps", () => {
@@ -63,24 +64,24 @@ describe("findFreeSpot", () => {
 
 describe("activate", () => {
   it("modülü varsayılan boyutla boş yere ekler", () => {
-    const l = activate(emptyLayout(), "grafik", size);
+    const l = activate(emptyPage(), "grafik", size);
     expect(l.items).toEqual([{ id: "grafik", x: 0, y: 0, w: 20, h: 10 }]);
     expect(isActive(l, "grafik")).toBe(true);
   });
 
   it("ikinci modül ilkinin üstüne binmez", () => {
-    let l = activate(emptyLayout(), "a", size);
+    let l = activate(emptyPage(), "a", size);
     l = activate(l, "b", size);
     expect(l.items[1]).toEqual({ id: "b", x: 20, y: 0, w: 20, h: 10 });
   });
 
   it("zaten aktifse aynı düzeni döndürür", () => {
-    const l = activate(emptyLayout(), "a", size);
+    const l = activate(emptyPage(), "a", size);
     expect(activate(l, "a", size)).toBe(l);
   });
 
   it("girdiyi değiştirmez", () => {
-    const l = emptyLayout();
+    const l = emptyPage();
     activate(l, "a", size);
     expect(l.items).toHaveLength(0);
   });
@@ -114,7 +115,7 @@ describe("deactivate", () => {
   });
 
   it("aktif değilse aynı düzeni döndürür", () => {
-    const l = emptyLayout();
+    const l = emptyPage();
     expect(deactivate(l, "yok")).toBe(l);
   });
 
@@ -127,7 +128,7 @@ describe("deactivate", () => {
   });
 
   it("kapat/aç döngüsü konumu ve boyutu korur", () => {
-    let l = activate(emptyLayout(), "a", size);
+    let l = activate(emptyPage(), "a", size);
     l = updateRect(l, "a", { x: 11, y: 6, w: 33, h: 14 });
     const back = activate(deactivate(l, "a"), "a", size);
     expect(back.items).toEqual([{ id: "a", x: 11, y: 6, w: 33, h: 14 }]);
@@ -164,11 +165,12 @@ describe("updateRect", () => {
 describe("sanitizeLayout", () => {
   it("geçerli düzeni olduğu gibi kabul eder", () => {
     const l = layoutOf([{ id: "a", x: 1, y: 2, w: 3, h: 4 }], { b: { x: 0, y: 0, w: 5, h: 5 } });
-    expect(sanitizeLayout(l)).toEqual(l);
+    const { tabs } = sanitizeLayout({ version: 1, ...l });
+    expect({ items: tabs[0].items, parked: tabs[0].parked }).toEqual(l);
   });
 
   it("çöp veriyi boş düzene çevirir", () => {
-    for (const v of [null, undefined, 5, "x", [], {}, { version: 2, items: [] }]) {
+    for (const v of [null, undefined, 5, "x", [], {}, { version: 3, items: [] }]) {
       expect(sanitizeLayout(v)).toEqual(emptyLayout());
     }
   });
@@ -185,8 +187,8 @@ describe("sanitizeLayout", () => {
       ],
       parked: { good: { x: 0, y: 0, w: 1, h: 1 }, worse: { x: 0, y: 0, w: 0, h: 1 } },
     });
-    expect(out.items.map((i) => i.id)).toEqual(["ok"]);
-    expect(Object.keys(out.parked)).toEqual(["good"]);
+    expect(out.tabs[0].items.map((i) => i.id)).toEqual(["ok"]);
+    expect(Object.keys(out.tabs[0].parked)).toEqual(["good"]);
   });
 
   it("aynı id'yi tekrar etmez", () => {
@@ -197,10 +199,10 @@ describe("sanitizeLayout", () => {
         { id: "a", x: 9, y: 9, w: 5, h: 5 },
       ],
     });
-    expect(out.items).toEqual([{ id: "a", x: 0, y: 0, w: 5, h: 5 }]);
+    expect(out.tabs[0].items).toEqual([{ id: "a", x: 0, y: 0, w: 5, h: 5 }]);
   });
 
   it("parked yoksa boş nesne kullanır", () => {
-    expect(sanitizeLayout({ version: 1, items: [] }).parked).toEqual({});
+    expect(sanitizeLayout({ version: 1, items: [] }).tabs[0].parked).toEqual({});
   });
 });

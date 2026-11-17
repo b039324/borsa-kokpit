@@ -4,6 +4,13 @@ import { signToken } from "../src/auth";
 import { makeEnv, req } from "./helpers";
 import type { Env } from "../src/types";
 
+// Eski (sürüm 1) gövdenin sunucuda taşınmış hâli.
+const mig = (items: unknown[], parked: unknown = {}) => ({
+  version: 2,
+  active: "sayfa-1",
+  tabs: [{ id: "sayfa-1", name: "Sayfa 1", items, parked }],
+});
+
 const GOOD = {
   version: 1,
   items: [
@@ -60,7 +67,7 @@ describe("/api/layout okuma ve yazma", () => {
     expect(w.status).toBe(200);
     expect(await w.json()).toEqual({ ok: true });
     const r = await authed(env);
-    expect(await r.json()).toEqual({ layout: GOOD });
+    expect(await r.json()).toEqual({ layout: mig(GOOD.items, GOOD.parked) });
   });
 
   it("ikinci yazma ilkinin üzerine yazar", async () => {
@@ -68,22 +75,20 @@ describe("/api/layout okuma ve yazma", () => {
     await put(env, GOOD);
     const next = { version: 1, items: [{ id: "x", x: 1, y: 2, w: 3, h: 4 }], parked: {} };
     await put(env, next);
-    expect(await (await authed(env)).json()).toEqual({ layout: next });
+    expect(await (await authed(env)).json()).toEqual({ layout: mig(next.items) });
   });
 
   it("boş düzen geçerlidir", async () => {
     const env = makeEnv();
     const empty = { version: 1, items: [], parked: {} };
     expect((await put(env, empty)).status).toBe(200);
-    expect(await (await authed(env)).json()).toEqual({ layout: empty });
+    expect(await (await authed(env)).json()).toEqual({ layout: mig([]) });
   });
 
   it("parked alanı yoksa boş kabul edilir", async () => {
     const env = makeEnv();
     expect((await put(env, { version: 1, items: [] })).status).toBe(200);
-    expect(await (await authed(env)).json()).toEqual({
-      layout: { version: 1, items: [], parked: {} },
-    });
+    expect(await (await authed(env)).json()).toEqual({ layout: mig([]) });
   });
 
   it("fazladan alanlar atılır", async () => {
@@ -95,7 +100,7 @@ describe("/api/layout okuma ve yazma", () => {
       parked: {},
     });
     expect(await (await authed(env)).json()).toEqual({
-      layout: { version: 1, items: [{ id: "a", x: 0, y: 0, w: 1, h: 1 }], parked: {} },
+      layout: mig([{ id: "a", x: 0, y: 0, w: 1, h: 1 }]),
     });
   });
 
@@ -108,7 +113,7 @@ describe("/api/layout okuma ve yazma", () => {
 
 describe("/api/layout doğrulama", () => {
   const bad: [string, unknown][] = [
-    ["sürüm yanlış", { ...GOOD, version: 2 }],
+    ["sürüm yanlış", { ...GOOD, version: 3 }],
     ["items dizi değil", { ...GOOD, items: "x" }],
     ["gövde dizi", []],
     ["gövde null", null],
@@ -157,7 +162,7 @@ describe("/api/layout doğrulama", () => {
 
   it("çok büyük gövde 413", async () => {
     const env = makeEnv();
-    const big = JSON.stringify({ version: 1, items: [], parked: {}, pad: "x".repeat(60_000) });
+    const big = JSON.stringify({ version: 1, items: [], parked: {}, pad: "x".repeat(120_000) });
     expect((await put(env, big)).status).toBe(413);
     expect(await env.KOKPIT.get("layout:v1")).toBeNull();
   });

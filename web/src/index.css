@@ -171,9 +171,96 @@ button:focus-visible {
 }
 
 .stage {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+
+.stage-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.tabbar {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 4px 8px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  overflow-x: auto;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 200px;
+  padding: 5px 8px 5px 12px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab-active {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--accent);
+}
+
+.tab-over {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-input {
+  width: 110px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.tab-close,
+.tab-add {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.tab-close:hover,
+.tab-add:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.tab-add {
+  padding: 5px 10px;
+  font-size: 18px;
+}
+
+.tab-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .canvas {

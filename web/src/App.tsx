@@ -9,6 +9,7 @@ import { TopBar } from "./components/TopBar";
 import { Sidebar } from "./components/Sidebar";
 import { Canvas } from "./components/Canvas";
 import { ModuleDrawer } from "./components/ModuleDrawer";
+import { TabBar } from "./components/TabBar";
 
 function ShellInner() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -19,8 +20,11 @@ function ShellInner() {
       <div className="body">
         <Sidebar />
         <div className="stage">
-          <Canvas />
-          {drawerOpen && <ModuleDrawer onClose={closeDrawer} />}
+          <TabBar />
+          <div className="stage-body">
+            <Canvas />
+            {drawerOpen && <ModuleDrawer onClose={closeDrawer} />}
+          </div>
         </div>
       </div>
     </div>

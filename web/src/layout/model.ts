@@ -13,11 +13,25 @@ export interface PlacedItem extends Rect {
   id: string;
 }
 
-export interface Layout {
-  version: 1;
+// Tek bir sayfanın (sekmenin) içeriği.
+export interface Page {
   items: PlacedItem[];
   parked: Record<string, Rect>;
 }
+
+export interface Tab extends Page {
+  id: string;
+  name: string;
+}
+
+export interface Layout {
+  version: 2;
+  active: string;
+  tabs: Tab[];
+}
+
+export const MAX_TABS = 8;
+export const MAX_TAB_NAME = 24;
 
 // Yeni modüllerin yerleştirileceği asgari sütun sayısı (96 x 20px = 1920px).
 export const MIN_COLS = 96;
@@ -27,12 +41,16 @@ const MAX_ITEMS = 100;
 const MAX_POS = 10_000;
 const MAX_SIZE = 1_000;
 
-export function emptyLayout(): Layout {
-  return { version: 1, items: [], parked: {} };
+export function emptyPage(): Page {
+  return { items: [], parked: {} };
 }
 
-export function isActive(layout: Layout, id: string): boolean {
-  return layout.items.some((i) => i.id === id);
+export function emptyLayout(): Layout {
+  return { version: 2, active: "sayfa-1", tabs: [{ id: "sayfa-1", name: "Sayfa 1", ...emptyPage() }] };
+}
+
+export function isActive(page: Page, id: string): boolean {
+  return page.items.some((i) => i.id === id);
 }
 
 export function overlaps(a: Rect, b: Rect): boolean {
@@ -78,12 +96,12 @@ export function findFreeSpot(
   return { x: 0, y: bottom };
 }
 
-export function activate(
-  layout: Layout,
+export function activate<P extends Page>(
+  layout: P,
   id: string,
   size: { w: number; h: number },
   cols: number = MIN_COLS,
-): Layout {
+): P {
   if (isActive(layout, id)) return layout;
 
   const parked = layout.parked[id];
@@ -100,24 +118,24 @@ export function activate(
   const rest = { ...layout.parked };
   delete rest[id];
   return {
-    version: 1,
+    ...layout,
     items: [...layout.items, { id, ...pos, w, h }],
     parked: rest,
   };
 }
 
-export function deactivate(layout: Layout, id: string): Layout {
+export function deactivate<P extends Page>(layout: P, id: string): P {
   const item = layout.items.find((i) => i.id === id);
   if (!item) return layout;
   return {
-    version: 1,
+    ...layout,
     items: layout.items.filter((i) => i.id !== id),
     parked: { ...layout.parked, [id]: pick(item) },
   };
 }
 
 // Sürükleme/boyutlandırma bitince yalnız ilgili modülün dikdörtgeni güncellenir.
-export function updateRect(layout: Layout, id: string, rect: Rect): Layout {
+export function updateRect<P extends Page>(layout: P, id: string, rect: Rect): P {
   const current = layout.items.find((i) => i.id === id);
   if (!current || !validRect(rect)) return layout;
   if (
@@ -129,7 +147,7 @@ export function updateRect(layout: Layout, id: string, rect: Rect): Layout {
     return layout;
   }
   return {
-    version: 1,
+    ...layout,
     items: layout.items.map((i) => (i.id === id ? { id, ...pick(rect) } : i)),
     parked: layout.parked,
   };
@@ -142,12 +160,7 @@ function toRect(v: unknown): Rect | null {
   return validRect(rect) ? pick(rect) : null;
 }
 
-// Sunucudan ya da eski sürümden gelen veriyi güvenle düzene çevirir; bozuk kayıtları atar.
-export function sanitizeLayout(input: unknown): Layout {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) return emptyLayout();
-  const body = input as Record<string, unknown>;
-  if (body.version !== 1) return emptyLayout();
-
+function sanitizePage(body: Record<string, unknown>): Page {
   const items: PlacedItem[] = [];
   const seen = new Set<string>();
   if (Array.isArray(body.items)) {
@@ -167,6 +180,94 @@ export function sanitizeLayout(input: unknown): Layout {
       if (rect && ID_RE.test(id)) parked[id] = rect;
     }
   }
+  return { items, parked };
+}
 
-  return { version: 1, items, parked };
+function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+// Sunucudan ya da eski sürümden gelen veriyi güvenle düzene çevirir; bozuk kayıtları atar.
+// Sürüm 1 (tek sayfa) tek sekmeli "Sayfa 1"e taşınır, hiçbir şey kaybolmaz.
+export function sanitizeLayout(input: unknown): Layout {
+  if (!isObject(input)) return emptyLayout();
+
+  if (input.version === 1) {
+    const base = emptyLayout();
+    return { ...base, tabs: [{ ...base.tabs[0], ...sanitizePage(input) }] };
+  }
+  if (input.version !== 2 || !Array.isArray(input.tabs)) return emptyLayout();
+
+  const tabs: Tab[] = [];
+  const seen = new Set<string>();
+  for (const raw of input.tabs) {
+    if (tabs.length >= MAX_TABS) break;
+    if (!isObject(raw)) continue;
+    const id = raw.id;
+    if (typeof id !== "string" || !ID_RE.test(id) || seen.has(id)) continue;
+    seen.add(id);
+    const trimmed = typeof raw.name === "string" ? raw.name.trim().slice(0, MAX_TAB_NAME) : "";
+    tabs.push({ id, name: trimmed || id, ...sanitizePage(raw) });
+  }
+  if (tabs.length === 0) return emptyLayout();
+
+  const active = typeof input.active === "string" && seen.has(input.active) ? input.active : tabs[0].id;
+  return { version: 2, active, tabs };
+}
+
+// ---- Sekmeler ----
+
+export function activePage(layout: Layout): Tab {
+  return layout.tabs.find((t) => t.id === layout.active) ?? layout.tabs[0];
+}
+
+// Etkin sekmenin içeriğini değiştirir; fn aynı nesneyi döndürürse düzen de aynen döner.
+export function updateActivePage(layout: Layout, fn: (page: Tab) => Tab): Layout {
+  const current = activePage(layout);
+  const next = fn(current);
+  if (next === current) return layout;
+  return { ...layout, tabs: layout.tabs.map((t) => (t === current ? next : t)) };
+}
+
+export function selectTab(layout: Layout, id: string): Layout {
+  if (id === layout.active || !layout.tabs.some((t) => t.id === id)) return layout;
+  return { ...layout, active: id };
+}
+
+// Yeni boş sayfa; adı ve kimliği kullanılmayan en küçük numaradan türer. Etkin sayfa olur.
+export function addTab(layout: Layout): Layout {
+  if (layout.tabs.length >= MAX_TABS) return layout;
+  const usedIds = new Set(layout.tabs.map((t) => t.id));
+  const usedNames = new Set(layout.tabs.map((t) => t.name));
+  let n = 1;
+  while (usedIds.has(`sayfa-${n}`) || usedNames.has(`Sayfa ${n}`)) n++;
+  const tab: Tab = { id: `sayfa-${n}`, name: `Sayfa ${n}`, ...emptyPage() };
+  return { ...layout, active: tab.id, tabs: [...layout.tabs, tab] };
+}
+
+export function removeTab(layout: Layout, id: string): Layout {
+  const index = layout.tabs.findIndex((t) => t.id === id);
+  if (index < 0 || layout.tabs.length <= 1) return layout;
+  const tabs = layout.tabs.filter((t) => t.id !== id);
+  let active = layout.active;
+  if (active === id) active = (tabs[index] ?? tabs[index - 1]).id;
+  return { ...layout, active, tabs };
+}
+
+export function renameTab(layout: Layout, id: string, name: string): Layout {
+  const next = name.trim();
+  const tab = layout.tabs.find((t) => t.id === id);
+  if (!tab || next.length < 1 || next.length > MAX_TAB_NAME || next === tab.name) return layout;
+  return { ...layout, tabs: layout.tabs.map((t) => (t === tab ? { ...t, name: next } : t)) };
+}
+
+// `id` sekmesini `overId` sekmesinin bulunduğu yere taşır (sürükle-bırak).
+export function moveTab(layout: Layout, id: string, overId: string): Layout {
+  const from = layout.tabs.findIndex((t) => t.id === id);
+  const to = layout.tabs.findIndex((t) => t.id === overId);
+  if (from < 0 || to < 0 || from === to) return layout;
+  const tabs = [...layout.tabs];
+  const [moved] = tabs.splice(from, 1);
+  tabs.splice(to, 0, moved);
+  return { ...layout, tabs };
 }
