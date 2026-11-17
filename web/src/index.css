@@ -685,3 +685,36 @@ button:focus-visible {
 .pattern-dir.down { color: #d64545; }
 .pattern-dir.flat { color: var(--muted, #8a8f98); }
 .pattern-desc { font-size: 12px; margin-top: 2px; }
+
+/* en çok yükselen/düşen/hacimli */
+.mv-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.mv-table td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.mv-table tr[aria-selected="true"] { background: rgba(74,144,217,.15); }
+.mv-num { text-align: right; font-variant-numeric: tabular-nums; }
+.mv-sym { background: none; border: none; color: inherit; font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+.mv-sym:hover { text-decoration: underline; }
+.mv-num.up, .ret-card .up, .pz-card .up, .br-card .up { color: #1f9d55; }
+.mv-num.down, .ret-card .down, .pz-card .down, .br-card .down { color: #d64545; }
+
+/* piyasa genişliği */
+.br-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--line); margin: 6px 0; }
+.br-bar i { display: block; height: 100%; }
+.br-bar i.up { background: #1f9d55; }
+.br-bar i.down { background: #d64545; }
+.br-bar i.flat { background: var(--muted); }
+.br-title { margin: 10px 0 4px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.br-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.br-chip { border: 1px solid var(--line); background: none; color: inherit; border-radius: 4px; padding: 1px 6px; cursor: pointer; font: inherit; }
+.br-chip:hover { border-color: var(--accent); }
+
+/* dönem getirileri */
+.r52-bar { position: relative; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #d64545, var(--muted), #1f9d55); margin: 8px 0 4px; }
+.r52-bar i { position: absolute; top: -4px; width: 4px; height: 14px; margin-left: -2px; background: var(--text); border-radius: 2px; }
+.r52-labels { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+
+/* pozisyon hesaplayıcı */
+.pz-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.pz-field { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+.pz-field input { font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; width: 100%; }
+.pz-last { margin: 6px 0; font: inherit; background: none; border: 1px solid var(--line); color: inherit; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.pz-warn { margin: 6px 0; padding: 4px 8px; border-radius: 4px; background: rgba(214,69,69,.15); color: #f0a0a0; }
