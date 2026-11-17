@@ -23,7 +23,10 @@ interface ApiMockOptions {
   alarmsGetStatus?: number;
   market?: unknown[];
   quotes?: Record<string, { price: number; prevClose: number; volume?: number }>;
-  stats?: Record<string, { price?: number; prevClose?: number; volume?: number; avgVolume?: number; vol?: number }>;
+  stats?: Record<
+    string,
+    { price?: number; prevClose?: number; volume?: number; avgVolume?: number; vol?: number; rsi?: number; sma20?: number; sma50?: number; rangePos?: number }
+  >;
   statsGetStatus?: number;
   layout?: unknown;
   layoutGetStatus?: number;
@@ -59,7 +62,7 @@ export function apiMock(opts: ApiMockOptions = {}) {
       const st = opts.stats ?? {};
       const stats = want
         .filter((x) => st[x])
-        .map((x) => ({ symbol: x, price: null, prevClose: null, volume: null, avgVolume: null, vol: null, ...st[x] }));
+        .map((x) => ({ symbol: x, price: null, prevClose: null, volume: null, avgVolume: null, vol: null, rsi: null, sma20: null, sma50: null, rangePos: null, ...st[x] }));
       return { status: opts.statsGetStatus ?? 200, body: { stats, failed: want.filter((x) => !st[x]) } };
     }
     if (url.includes("/api/quotes")) {

@@ -177,3 +177,82 @@ describe("/api/chart: endeks, kur ve emtia takma adları", () => {
     expect(((await res.json()) as any).symbol).toBe(symbol);
   });
 });
+
+describe("computeStats: RSI, ortalamalar, aralık konumu", () => {
+  // StockCharts örnek verisi: ilk RSI(14) ≈ 70,5; bir gün sonra (46,03) ≈ 66,3
+  const base = [44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.1, 45.42, 45.84, 46.08, 45.89, 46.03, 45.61, 46.28, 46.28];
+
+  it("RSI(14) Wilder yöntemiyle hesaplanır", () => {
+    expect(computeStats(chart(base, flat(15))).rsi!).toBeCloseTo(70.5, 0);
+    expect(computeStats(chart([...base, 46.03], flat(16))).rsi!).toBeCloseTo(66.3, 0);
+  });
+
+  it("yalnız yükselişte RSI 100, yalnız düşüşte 0, sabitte 50", () => {
+    const up = Array.from({ length: 20 }, (_, i) => 100 + i);
+    const down = Array.from({ length: 20 }, (_, i) => 100 - i);
+    expect(computeStats(chart(up, flat(20))).rsi).toBe(100);
+    expect(computeStats(chart(down, flat(20))).rsi).toBe(0);
+    expect(computeStats(chart(flat(20, 100), flat(20))).rsi).toBe(50);
+  });
+
+  it("15'ten az kapanışta RSI null", () => {
+    expect(computeStats(chart(flat(14, 10), flat(14))).rsi).toBeNull();
+  });
+
+  it("SMA20 ve SMA50 son kapanışların ortalamasıdır; yetmiyorsa null", () => {
+    const closes = Array.from({ length: 60 }, (_, i) => i + 1); // 1..60
+    const s = computeStats(chart(closes, flat(60)));
+    expect(s.sma20).toBe(50.5); // 41..60
+    expect(s.sma50).toBe(35.5); // 11..60
+    const short = computeStats(chart(closes.slice(0, 30), flat(30)));
+    expect(short.sma20).toBe(20.5); // 11..30
+    expect(short.sma50).toBeNull();
+    expect(computeStats(chart(closes.slice(0, 10), flat(10))).sma20).toBeNull();
+  });
+
+  it("aralık konumu: en düşük/en yüksek mum ve güncel fiyata göre 0..1", () => {
+    const c = chart([100, 110, 120, 100], flat(4), { price: 110 });
+    c.candles[1].h = 130;
+    c.candles[2].l = 80;
+    expect(computeStats(c).rangePos).toBeCloseTo((110 - 80) / (130 - 80));
+  });
+
+  it("fiyat aralığın dışındaysa 0 ya da 1'e kenetlenir; aralık yoksa null", () => {
+    expect(computeStats(chart([100, 110], flat(2), { price: 150 })).rangePos).toBe(1);
+    expect(computeStats(chart([100, 110], flat(2), { price: 50 })).rangePos).toBe(0);
+    expect(computeStats(chart([100, 100], flat(2))).rangePos).toBeNull();
+    expect(computeStats(chart([], [])).rangePos).toBeNull();
+  });
+
+  it("uçta yeni alanlar da döner", async () => {
+    const ts = Array.from({ length: 60 }, (_, i) => T0 + i * DAY);
+    const close = Array.from({ length: 60 }, (_, i) => 100 + i);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            chart: {
+              result: [
+                {
+                  meta: { regularMarketPrice: 159, chartPreviousClose: 158, gmtoffset: 10800 },
+                  timestamp: ts,
+                  indicators: { quote: [{ open: close, high: close, low: close, close, volume: close.map(() => 10) }] },
+                },
+              ],
+              error: null,
+            },
+          }),
+        ),
+      ),
+    );
+    const env = makeEnv();
+    const login = await worker.fetch(loginReq("dogru-sifre"), env);
+    const { token } = (await login.json()) as { token: string };
+    const res = await worker.fetch(req("/api/stats?symbols=THYAO", { headers: { Authorization: `Bearer ${token}` } }), env);
+    const s = ((await res.json()) as any).stats[0];
+    expect(s.rsi).toBe(100);
+    expect(s.sma50).toBeCloseTo(134.5);
+    expect(s.rangePos).toBe(1);
+  });
+});

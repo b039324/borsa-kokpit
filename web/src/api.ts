@@ -238,6 +238,11 @@ export interface StatsItem {
   volume: number | null; // son seansın toplam lotu
   avgVolume: number | null; // önceki 20 seansın ortalaması
   vol: number | null; // yıllık oynaklık (oran)
+  // Eski Worker sürümlerinde yok olabilir
+  rsi?: number | null;
+  sma20?: number | null;
+  sma50?: number | null;
+  rangePos?: number | null; // 3 aylık aralıkta 0..1
 }
 
 export async function getStats(token: string, symbols: string[], signal?: AbortSignal): Promise<{ stats: StatsItem[]; failed: string[] }> {
