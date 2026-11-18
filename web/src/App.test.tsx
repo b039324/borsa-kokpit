@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
-import { mockFetch, TOKEN_KEY } from "./test/helpers";
+import { apiMock, mockFetch, TOKEN_KEY } from "./test/helpers";
 
 describe("oturum kontrolü", () => {
   it("token yoksa giriş ekranı açılır, istek atılmaz", () => {
@@ -127,5 +127,18 @@ describe("çıkış", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Çıkış" }));
     expect(screen.getByLabelText("Şifre")).toBeInTheDocument();
     expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+  });
+});
+
+describe("varsayılan hisse", () => {
+  it("açılışta hisse seçmeden AKBNK seçili gelir ve grafiği istenir", async () => {
+    localStorage.setItem(TOKEN_KEY, "tok123");
+    const { fn } = apiMock({
+      layout: { version: 2, active: "a", tabs: [{ id: "a", name: "Hisse", items: [{ id: "grafik", x: 0, y: 0, w: 36, h: 20 }], parked: [] }] },
+    });
+    render(<App />);
+    await screen.findByText("Borsa Kokpit");
+    await waitFor(() => expect(fn.mock.calls.some((c) => /[?&]symbol=AKBNK/.test(String(c[0])))).toBe(true));
+    expect(screen.queryByText("Bir hisse seç.")).toBeNull();
   });
 });

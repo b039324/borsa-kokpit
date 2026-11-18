@@ -14,8 +14,8 @@ interface SelectionValue {
 
 const SelectionContext = createContext<SelectionValue | null>(null);
 
-export function SelectionProvider({ children }: { children: ReactNode }) {
-  const [selected, setSelected] = useState<string | null>(null);
+export function SelectionProvider({ children, initial = null }: { children: ReactNode; initial?: string | null }) {
+  const [selected, setSelected] = useState<string | null>(initial);
   const value = useMemo(() => ({ selected, select: setSelected }), [selected]);
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
 }

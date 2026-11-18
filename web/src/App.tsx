@@ -1,6 +1,9 @@
 import { useCallback, useState } from "react";
 import { AuthProvider, useAuth } from "./auth";
 import { SelectionProvider } from "./selection";
+
+// Açılışta seçili gelen hisse.
+const DEFAULT_SYMBOL = "AKBNK";
 import { FavoritesProvider } from "./favorites";
 import { PortfolioProvider } from "./portfolio/PortfolioProvider";
 import { AlarmsProvider } from "./alarms";
@@ -35,7 +38,7 @@ function ShellInner() {
 
 function Shell() {
   return (
-    <SelectionProvider>
+    <SelectionProvider initial={DEFAULT_SYMBOL}>
       <FavoritesProvider>
         <PortfolioProvider>
           <AlarmsProvider>
