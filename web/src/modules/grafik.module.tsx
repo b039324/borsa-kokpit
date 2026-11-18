@@ -30,7 +30,7 @@ function Grafik({ symbol }: ModuleProps) {
         ) : data.candles.length === 0 ? (
           <p className="muted">Bu dönem için mum verisi yok.</p>
         ) : (
-          <CandleChart candles={data.candles} gmtoffset={data.gmtoffset} period={period} w={w} h={h} />
+          <CandleChart candles={data.candles} gmtoffset={data.gmtoffset} period={period} w={w} h={h} volume />
         )}
       </div>
       {data && error && <p className="muted">Güncellenemedi</p>}

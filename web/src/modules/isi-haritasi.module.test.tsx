@@ -38,10 +38,18 @@ describe("ısı haritası modülü", () => {
     expect(def.scope).toBe("global");
   });
 
-  it("BIST 100'ün tüm hisseleri için kutu çizer (varsayılan sekme)", async () => {
+  it("varsayılan sekme BIST 30: 30 kutu çizer", async () => {
     setup(allQuotes());
     const cells = await screen.findAllByTestId("heat-cell");
-    expect(cells).toHaveLength(100);
+    expect(cells).toHaveLength(30);
+    expect(screen.getByRole("tab", { name: "BIST 30" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("BIST 100 sekmesine geçince 100 kutu çizer", async () => {
+    setup(allQuotes());
+    await screen.findAllByTestId("heat-cell");
+    await userEvent.click(screen.getByRole("tab", { name: "BIST 100" }));
+    await vi.waitFor(() => expect(screen.getAllByTestId("heat-cell")).toHaveLength(100));
   });
 
   it("büyük TL hacimli hisse daha büyük kutu alır", async () => {
@@ -68,7 +76,7 @@ describe("ısı haritası modülü", () => {
   it("hacmi olmayan hisse haritaya girmez, altta sayısı yazılır", async () => {
     setup(allQuotes({ ASELS: { price: 10, prevClose: 10, volume: 0 }, SISE: { price: 10, prevClose: 10 } }));
     await screen.findAllByTestId("heat-cell");
-    expect(screen.getAllByTestId("heat-cell")).toHaveLength(98);
+    expect(screen.getAllByTestId("heat-cell")).toHaveLength(28); // BIST 30 − 2
     expect(screen.queryByRole("button", { name: /^ASELS / })).not.toBeInTheDocument();
     expect(screen.getByText(/2 hissede veri yok/)).toBeInTheDocument();
   });
@@ -79,13 +87,6 @@ describe("ısı haritası modülü", () => {
     await userEvent.click(screen.getByRole("button", { name: /^THYAO / }));
     expect(screen.getByTestId("sel")).toHaveTextContent("THYAO");
     expect(screen.getByRole("button", { name: /^THYAO / })).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("BIST 30 sekmesine geçince yalnız 30 kutu kalır", async () => {
-    setup(allQuotes());
-    await screen.findAllByTestId("heat-cell");
-    await userEvent.click(screen.getByRole("tab", { name: "BIST 30" }));
-    await vi.waitFor(() => expect(screen.getAllByTestId("heat-cell")).toHaveLength(30));
   });
 
   it("tooltip fiyat, değişim ve TL hacmi içerir", async () => {

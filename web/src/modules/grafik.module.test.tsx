@@ -41,6 +41,13 @@ describe("grafik modülü", () => {
     expect(candles[1]).toHaveClass("down"); // c=100 < o=101
   });
 
+  it("grafiğin altında her mum için hacim çubuğu çizer", async () => {
+    mockFetch(() => ({ status: 200, body: body(6) }));
+    render(<Comp symbol="THYAO" />);
+    await screen.findAllByTestId("candle");
+    expect(screen.getAllByTestId("vol-bar")).toHaveLength(6);
+  });
+
   it("21 mumdan azsa SMA çizgisi boş, 50'den azsa yalnız SMA 21 dolu", async () => {
     mockFetch(() => ({ status: 200, body: body(30) }));
     render(<Comp symbol="THYAO" />);

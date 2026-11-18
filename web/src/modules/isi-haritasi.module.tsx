@@ -21,7 +21,7 @@ interface Cell {
 }
 
 function IsiHaritasi() {
-  const [tab, setTab] = useState<ListKey>("BIST100");
+  const [tab, setTab] = useState<ListKey>("BIST30");
   const symbols = SYMBOL_LISTS[tab];
   const { quotes, failed, loading, error } = useQuotes(symbols);
   const { selected, select } = useSelection();
