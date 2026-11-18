@@ -2,25 +2,30 @@
 // crumb bir kez alınıp bellekte saklanır, 401/403 gelirse bir kez yenilenir.
 import { YahooError } from "./yahoo";
 
-type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
+export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
 const HOSTS = ["https://query1.finance.yahoo.com", "https://query2.finance.yahoo.com"];
 const UA = "Mozilla/5.0 (compatible; borsa-kokpit)";
 const MODULES = ["price", "summaryDetail", "defaultKeyStatistics", "financialData"];
 const CRUMB_TTL_MS = 6 * 3600_000;
 
-interface Crumb {
+export interface Crumb {
   crumb: string;
   cookie: string;
   exp: number;
 }
 let crumbCache: Crumb | null = null;
 
+// Önbellekte (eski olabilecek) crumb var mı? Başarısızlıkta yenileyip yenilemeyeceğine karar vermek için.
+export function hasCrumb(): boolean {
+  return !!crumbCache && crumbCache.exp > Date.now();
+}
+
 export function resetCrumbCache(): void {
   crumbCache = null;
 }
 
-async function getCrumb(f: FetchLike, force: boolean): Promise<Crumb> {
+export async function getCrumb(f: FetchLike, force: boolean): Promise<Crumb> {
   if (!force && crumbCache && crumbCache.exp > Date.now()) return crumbCache;
   let cookie = "";
   try {

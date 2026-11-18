@@ -53,13 +53,13 @@ export class YahooError extends Error {
   }
 }
 
-type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
+export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
 const HOSTS = ["https://query1.finance.yahoo.com", "https://query2.finance.yahoo.com"];
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; borsa-kokpit)", Accept: "application/json" };
 
 // query1 olmazsa query2 denenir. 404 "bulunamadı" demektir, yedeğe geçilmez.
-async function getJson(path: string, f: FetchLike): Promise<any> {
+export async function getJson(path: string, f: FetchLike): Promise<any> {
   let last = "bilinmeyen hata";
   for (const host of HOSTS) {
     try {

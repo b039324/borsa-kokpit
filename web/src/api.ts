@@ -165,6 +165,48 @@ export async function getFundamentals(token: string, symbol: string, signal?: Ab
   return (await res.json()) as Fundamentals;
 }
 
+export interface FinancialPeriod {
+  date: string;
+  revenue: number | null;
+  grossProfit: number | null;
+  operatingIncome: number | null;
+  netIncome: number | null;
+}
+
+export interface Financials {
+  symbol: string;
+  currency: string | null;
+  annual: FinancialPeriod[];
+  quarterly: FinancialPeriod[];
+}
+
+export async function getFinancials(token: string, symbol: string, signal?: AbortSignal): Promise<Financials> {
+  const res = await request(`/api/financials?symbol=${encodeURIComponent(symbol)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+  if (res.status === 404) throw new ApiError(404, "Hisse bulunamadı");
+  if (!res.ok) throw new ApiError(res.status, "Finansal tablo alınamadı");
+  return (await res.json()) as Financials;
+}
+
+export interface DividendsData {
+  symbol: string;
+  currency: string | null;
+  dividends: { date: string; amount: number }[];
+  splits: { date: string; numerator: number; denominator: number }[];
+}
+
+export async function getDividends(token: string, symbol: string, signal?: AbortSignal): Promise<DividendsData> {
+  const res = await request(`/api/dividends?symbol=${encodeURIComponent(symbol)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+  if (res.status === 404) throw new ApiError(404, "Hisse bulunamadı");
+  if (!res.ok) throw new ApiError(res.status, "Temettü verisi alınamadı");
+  return (await res.json()) as DividendsData;
+}
+
 export interface Alarm {
   id: string;
   symbol: string;

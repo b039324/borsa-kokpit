@@ -1,7 +1,7 @@
 import type { Env } from "./types";
 import { allowedOrigin, withCors } from "./cors";
 import { isAuthenticated, safeEqual, signToken } from "./auth";
-import { handleChart, handleFundamentals, handleMarket, handleQuotes, handleSearch, handleStats } from "./data";
+import { handleChart, handleDividends, handleFinancials, handleFundamentals, handleMarket, handleQuotes, handleSearch, handleStats } from "./data";
 import { ALARMS_KEY, validateAlarms } from "./alarms";
 import { FAVORITES_KEY, validateFavorites } from "./favorites";
 import { PORTFOLIO_KEY, validatePortfolio } from "./portfolio";
@@ -214,6 +214,14 @@ async function route(request: Request, env: Env): Promise<Response> {
 
   if (pathname === "/api/fundamentals") {
     return (await guard(request, env)) ?? handleFundamentals(request);
+  }
+
+  if (pathname === "/api/financials") {
+    return (await guard(request, env)) ?? handleFinancials(request);
+  }
+
+  if (pathname === "/api/dividends") {
+    return (await guard(request, env)) ?? handleDividends(request);
   }
 
   if (pathname === "/api/chart") {

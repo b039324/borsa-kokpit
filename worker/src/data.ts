@@ -1,3 +1,5 @@
+import { getDividends } from "./dividends";
+import { getFinancials } from "./financials";
 import { getFundamentals } from "./fundamentals";
 import { MARKET_ITEMS } from "./market";
 import { computeStats, type Stats } from "./stats";
@@ -135,6 +137,34 @@ export async function handleFundamentals(request: Request): Promise<Response> {
   return cached(request, FUNDAMENTALS_TTL, async () => {
     try {
       return json(await getFundamentals(symbol), 200, FUNDAMENTALS_TTL);
+    } catch (e) {
+      return mapError(e);
+    }
+  });
+}
+
+const STATEMENT_TTL = 3600; // finansal tablo ve temettü yavaş değişir → 1 saat
+
+export async function handleFinancials(request: Request): Promise<Response> {
+  if (request.method !== "GET") return json({ error: "Yöntem desteklenmiyor" }, 405);
+  const symbol = (new URL(request.url).searchParams.get("symbol") ?? "").toUpperCase();
+  if (!SYMBOL_RE.test(symbol)) return json({ error: "Geçersiz sembol" }, 400);
+  return cached(request, STATEMENT_TTL, async () => {
+    try {
+      return json(await getFinancials(symbol), 200, STATEMENT_TTL);
+    } catch (e) {
+      return mapError(e);
+    }
+  });
+}
+
+export async function handleDividends(request: Request): Promise<Response> {
+  if (request.method !== "GET") return json({ error: "Yöntem desteklenmiyor" }, 405);
+  const symbol = (new URL(request.url).searchParams.get("symbol") ?? "").toUpperCase();
+  if (!SYMBOL_RE.test(symbol)) return json({ error: "Geçersiz sembol" }, 400);
+  return cached(request, STATEMENT_TTL, async () => {
+    try {
+      return json(await getDividends(symbol), 200, STATEMENT_TTL);
     } catch (e) {
       return mapError(e);
     }
