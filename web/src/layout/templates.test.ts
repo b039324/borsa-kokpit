@@ -30,3 +30,12 @@ describe("sayfa şablonları", () => {
     expect(out[0].defaultSize.w).toBeGreaterThan(0);
   });
 });
+
+describe("Portföy şablonu", () => {
+  it("portföy modüllerini içerir ve kayıtta hepsi bulunur", () => {
+    const t = TEMPLATES.find((x) => x.key === "portfoy")!;
+    expect(t.label).toBe("Portföy");
+    expect(t.modules).toEqual(expect.arrayContaining(["portfoy-ozet", "portfoy-pozisyonlar", "portfoy-dagilim"]));
+    expect(resolveTemplate(t, registry)).toHaveLength(t.modules.length);
+  });
+});

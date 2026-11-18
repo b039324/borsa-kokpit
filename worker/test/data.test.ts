@@ -290,3 +290,50 @@ describe("/api/market", () => {
     expect((await worker.fetch(req("/api/market", { method: "POST", headers: h }), env)).status).toBe(405);
   });
 });
+
+describe("/api/portfolio", () => {
+  const body = { positions: [{ symbol: "THYAO", qty: 100, cost: 250.5 }] };
+
+  it("giriş gerektirir", async () => {
+    expect((await worker.fetch(req("/api/portfolio"), makeEnv())).status).toBe(401);
+    expect((await worker.fetch(req("/api/portfolio", { method: "PUT", body: "{}" }), makeEnv())).status).toBe(401);
+  });
+
+  it("kayıt yoksa boş portföy döner", async () => {
+    const { env, h } = await auth();
+    const res = await worker.fetch(req("/api/portfolio", { headers: h }), env);
+    expect(await res.json()).toEqual({ positions: [] });
+  });
+
+  it("kaydeder ve geri okur", async () => {
+    const { env, h } = await auth();
+    const put = await worker.fetch(req("/api/portfolio", { method: "PUT", headers: h, body: JSON.stringify(body) }), env);
+    expect(put.status).toBe(200);
+    const get = await worker.fetch(req("/api/portfolio", { headers: h }), env);
+    expect(await get.json()).toEqual(body);
+  });
+
+  it("geçersiz gövdede 400 verir ve eski kaydı bozmaz", async () => {
+    const { env, h } = await auth();
+    await worker.fetch(req("/api/portfolio", { method: "PUT", headers: h, body: JSON.stringify(body) }), env);
+    const bad = await worker.fetch(
+      req("/api/portfolio", { method: "PUT", headers: h, body: JSON.stringify({ positions: [{ symbol: "THYAO", qty: -1, cost: 1 }] }) }),
+      env,
+    );
+    expect(bad.status).toBe(400);
+    const get = await worker.fetch(req("/api/portfolio", { headers: h }), env);
+    expect(await get.json()).toEqual(body);
+  });
+
+  it("bozuk JSON'da 400, çok büyük gövdede 413", async () => {
+    const { env, h } = await auth();
+    expect((await worker.fetch(req("/api/portfolio", { method: "PUT", headers: h, body: "{{" }), env)).status).toBe(400);
+    const big = JSON.stringify({ positions: [], pad: "x".repeat(20_000) });
+    expect((await worker.fetch(req("/api/portfolio", { method: "PUT", headers: h, body: big }), env)).status).toBe(413);
+  });
+
+  it("desteklenmeyen yöntemde 405", async () => {
+    const { env, h } = await auth();
+    expect((await worker.fetch(req("/api/portfolio", { method: "DELETE", headers: h }), env)).status).toBe(405);
+  });
+});

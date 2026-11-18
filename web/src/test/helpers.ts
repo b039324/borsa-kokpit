@@ -19,6 +19,9 @@ export const TOKEN_KEY = "kokpit_token";
 
 interface ApiMockOptions {
   favorites?: string[];
+  portfolio?: { symbol: string; qty: number; cost: number }[];
+  portfolioGetStatus?: number;
+  portfolioPutStatus?: number;
   alarms?: unknown[];
   alarmsGetStatus?: number;
   market?: unknown[];
@@ -39,6 +42,9 @@ export function apiMock(opts: ApiMockOptions = {}) {
   const puts: any[] = [];
   const favPuts: string[][] = [];
   const alarmPuts: any[][] = [];
+  // Sunucudaki portföyü taklit eder: PUT kalıcı olur, sonraki GET onu döner (sekme/modül kapanıp açılınca veri durur).
+  let serverPortfolio = opts.portfolio ?? [];
+  const portfolioPuts: any[][] = [];
   let putCall = 0;
   const fn = mockFetch((url, init) => {
     if (url.endsWith("/api/me")) return { status: 200, body: { ok: true } };
@@ -49,6 +55,16 @@ export function apiMock(opts: ApiMockOptions = {}) {
         return { status: 200, body: { ok: true } };
       }
       return { status: opts.alarmsGetStatus ?? 200, body: { alarms: opts.alarms ?? [] } };
+    }
+    if (url.endsWith("/api/portfolio")) {
+      if (init?.method === "PUT") {
+        const positions = JSON.parse(String(init.body)).positions;
+        portfolioPuts.push(positions);
+        const status = opts.portfolioPutStatus ?? 200;
+        if (status === 200) serverPortfolio = positions;
+        return { status, body: status === 200 ? { ok: true } : { error: "hata" } };
+      }
+      return { status: opts.portfolioGetStatus ?? 200, body: { positions: serverPortfolio } };
     }
     if (url.endsWith("/api/favorites")) {
       if (init?.method === "PUT") {
@@ -81,5 +97,5 @@ export function apiMock(opts: ApiMockOptions = {}) {
     return { status: 404 };
   });
   const gets = () => fn.mock.calls.filter(([u, i]) => String(u).endsWith("/api/layout") && !i?.method);
-  return { fn, puts, gets, favPuts, alarmPuts };
+  return { fn, puts, gets, favPuts, alarmPuts, portfolioPuts };
 }

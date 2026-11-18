@@ -24,6 +24,11 @@ export const TEMPLATES: Template[] = [
     label: "Analiz",
     modules: ["goreli-guc", "karsilastirma", "getiri-donemleri", "mum-formasyonu", "volatilite-siralamasi"],
   },
+  {
+    key: "portfoy",
+    label: "Portföy",
+    modules: ["portfoy-ozet", "portfoy-pozisyonlar", "portfoy-dagilim", "pozisyon-hesaplayici"],
+  },
 ];
 
 // Şablondaki modülleri kayıt defterinden çözer; kayıtlı olmayanı atar.

@@ -143,13 +143,13 @@ describe("TabBar: sayfa şablonları", () => {
     expect(menu.style.left).toBe("120px");
   });
 
-  it("'+' menüsü boş sayfa ve üç şablonu listeler; seçilince menü kapanır", async () => {
+  it("'+' menüsü boş sayfa ve dört şablonu listeler; seçilince menü kapanır", async () => {
     await setup(layout([tab("a", "A")]));
     expect(screen.queryByRole("menu")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Yeni sayfa" }));
     const items = screen.getAllByRole("menuitem").map((e) => e.textContent);
     expect(items[0]).toBe("Boş sayfa");
-    expect(items.slice(1).map((t) => t!.replace(/\s*\(.*\)$/, ""))).toEqual(["Hisse", "Piyasa", "Analiz"]);
+    expect(items.slice(1).map((t) => t!.replace(/\s*\(.*\)$/, ""))).toEqual(["Hisse", "Piyasa", "Analiz", "Portföy"]);
     await userEvent.click(screen.getByRole("menuitem", { name: "Boş sayfa" }));
     expect(screen.queryByRole("menu")).toBeNull();
   });

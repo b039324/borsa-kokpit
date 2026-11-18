@@ -206,6 +206,28 @@ export async function saveFavorites(token: string, symbols: string[]): Promise<v
   if (!res.ok) throw new ApiError(res.status, "Favoriler kaydedilemedi");
 }
 
+export interface PortfolioPosition {
+  symbol: string;
+  qty: number;
+  cost: number;
+}
+
+export async function getPortfolio(token: string): Promise<PortfolioPosition[]> {
+  const res = await request("/api/portfolio", { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new ApiError(res.status, "Portföy alınamadı");
+  const body = (await res.json()) as { positions?: PortfolioPosition[] };
+  return Array.isArray(body.positions) ? body.positions : [];
+}
+
+export async function savePortfolio(token: string, positions: PortfolioPosition[]): Promise<void> {
+  const res = await request("/api/portfolio", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ positions }),
+  });
+  if (!res.ok) throw new ApiError(res.status, "Portföy kaydedilemedi");
+}
+
 export interface QuoteItem {
   symbol: string;
   price: number | null;

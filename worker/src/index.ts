@@ -4,6 +4,7 @@ import { isAuthenticated, safeEqual, signToken } from "./auth";
 import { handleChart, handleFundamentals, handleMarket, handleQuotes, handleSearch, handleStats } from "./data";
 import { ALARMS_KEY, validateAlarms } from "./alarms";
 import { FAVORITES_KEY, validateFavorites } from "./favorites";
+import { PORTFOLIO_KEY, validatePortfolio } from "./portfolio";
 import { LAYOUT_KEY, MAX_BODY_BYTES, validateLayout } from "./layout";
 
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -117,6 +118,34 @@ async function handleFavorites(request: Request, env: Env): Promise<Response> {
   return json({ error: "Yöntem desteklenmiyor" }, 405);
 }
 
+async function handlePortfolio(request: Request, env: Env): Promise<Response> {
+  if (request.method === "GET") {
+    const raw = await env.KOKPIT.get(PORTFOLIO_KEY);
+    if (!raw) return json({ positions: [] });
+    try {
+      const checked = validatePortfolio(JSON.parse(raw));
+      return json({ positions: checked.ok ? checked.positions : [] });
+    } catch {
+      return json({ positions: [] });
+    }
+  }
+  if (request.method === "PUT") {
+    const text = await request.text();
+    if (new TextEncoder().encode(text).length > 20_000) return json({ error: "Portföy çok büyük" }, 413);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return json({ error: "Geçersiz JSON" }, 400);
+    }
+    const checked = validatePortfolio(parsed);
+    if (!checked.ok) return json({ error: checked.error }, 400);
+    await env.KOKPIT.put(PORTFOLIO_KEY, JSON.stringify({ positions: checked.positions }));
+    return json({ ok: true });
+  }
+  return json({ error: "Yöntem desteklenmiyor" }, 405);
+}
+
 async function handleAlarms(request: Request, env: Env): Promise<Response> {
   if (request.method === "GET") {
     const raw = await env.KOKPIT.get(ALARMS_KEY);
@@ -161,6 +190,10 @@ async function route(request: Request, env: Env): Promise<Response> {
 
   if (pathname === "/api/favorites") {
     return (await guard(request, env)) ?? handleFavorites(request, env);
+  }
+
+  if (pathname === "/api/portfolio") {
+    return (await guard(request, env)) ?? handlePortfolio(request, env);
   }
 
   if (pathname === "/api/alarms") {
