@@ -745,7 +745,7 @@ button:focus-visible {
 
 /* + menüsü ve tema düğmesi */
 .tab-add-wrap { position: relative; }
-.tab-menu { position: absolute; top: 100%; left: 0; z-index: 30; min-width: 190px; display: flex; flex-direction: column; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.tab-menu { z-index: 30; min-width: 190px; display: flex; flex-direction: column; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
 .tab-menu button { text-align: left; border: none; padding: 6px 10px; white-space: nowrap; }
 .tab-menu button:hover { background: rgba(128,128,128,.15); }
 .theme-toggle { padding: 4px 8px; line-height: 1; }

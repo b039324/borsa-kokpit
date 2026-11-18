@@ -15,6 +15,9 @@ export function TabBar({ registry = defaultRegistry }: { registry?: Registry }) 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Sekme çubuğu yatay kaydırıldığı için (overflow) alta açılan menü kırpılır; bu yüzden menü
+  // ekrana göre (fixed) ve düğmenin altına konumlanır.
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
   const addRef = useRef<HTMLDivElement>(null);
   // Enter/Escape ile çıkınca ardından gelen blur ikinci kez kaydetmesin.
@@ -162,12 +165,16 @@ export function TabBar({ registry = defaultRegistry }: { registry?: Registry }) 
           aria-expanded={menuOpen}
           title={layout.tabs.length >= MAX_TABS ? `En çok ${MAX_TABS} sayfa` : "Yeni sayfa"}
           disabled={layout.tabs.length >= MAX_TABS}
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setMenuPos({ top: r.bottom, left: r.left });
+            setMenuOpen((o) => !o);
+          }}
         >
           +
         </button>
         {menuOpen && (
-          <div className="tab-menu" role="menu">
+          <div className="tab-menu" role="menu" style={{ position: "fixed", top: menuPos.top, left: menuPos.left }}>
             <button
               type="button"
               role="menuitem"

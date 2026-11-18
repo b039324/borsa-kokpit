@@ -64,3 +64,92 @@ export function macd(closes: number[], fast = 12, slow = 26, sig = 9): Macd {
   const hist = line.map((v, i) => (v !== null && signal[i] !== null ? v - signal[i]! : null));
   return { macd: line, signal, hist };
 }
+
+export interface Bands {
+  mid: (number | null)[];
+  upper: (number | null)[];
+  lower: (number | null)[];
+}
+
+// Bollinger bantları: orta = n günlük SMA, bantlar = ±k × popülasyon standart sapması.
+export function bollinger(closes: number[], n = 20, k = 2): Bands {
+  const mid = sma(closes, n);
+  const upper: (number | null)[] = [];
+  const lower: (number | null)[] = [];
+  for (let i = 0; i < closes.length; i++) {
+    const m = mid[i];
+    if (m === null) {
+      upper.push(null);
+      lower.push(null);
+      continue;
+    }
+    let ss = 0;
+    for (let j = i - n + 1; j <= i; j++) ss += (closes[j] - m) ** 2;
+    const sd = Math.sqrt(ss / n);
+    upper.push(m + k * sd);
+    lower.push(m - k * sd);
+  }
+  return { mid, upper, lower };
+}
+
+type Bar = { h: number; l: number; c: number };
+
+// Wilder ATR. Gerçek aralık = max(h-l, |h-öncekiKapanış|, |l-öncekiKapanış|); ilk mumda h-l.
+// İlk ATR (n-1. indeks) ilk n gerçek aralığın ortalaması, sonrası Wilder yumuşatması.
+export function atr(candles: Bar[], n = 14): (number | null)[] {
+  const out: (number | null)[] = [];
+  let prev = 0;
+  let sum = 0;
+  for (let i = 0; i < candles.length; i++) {
+    const c = candles[i];
+    const tr = i === 0 ? c.h - c.l : Math.max(c.h - c.l, Math.abs(c.h - candles[i - 1].c), Math.abs(c.l - candles[i - 1].c));
+    if (i < n - 1) {
+      sum += tr;
+      out.push(null);
+    } else if (i === n - 1) {
+      sum += tr;
+      prev = sum / n;
+      out.push(prev);
+    } else {
+      prev = (prev * (n - 1) + tr) / n;
+      out.push(prev);
+    }
+  }
+  return out;
+}
+
+// Boşlukları (null) atlayarak basit ortalama; pencerede null varsa null.
+function smaNullable(values: (number | null)[], n: number): (number | null)[] {
+  return values.map((_, i) => {
+    if (i < n - 1) return null;
+    let s = 0;
+    for (let j = i - n + 1; j <= i; j++) {
+      const v = values[j];
+      if (v === null) return null;
+      s += v;
+    }
+    return s / n;
+  });
+}
+
+export interface Stoch {
+  k: (number | null)[];
+  d: (number | null)[];
+}
+
+// Yavaş Stochastic (n, smoothK, d): ham %K = (kapanış - en düşük) / (en yüksek - en düşük) × 100
+// (aralık 0 ise 50), %K = ham %K'nın smoothK günlük SMA'sı, %D = %K'nın d günlük SMA'sı.
+export function stochastic(candles: Bar[], n = 14, smoothK = 3, d = 3): Stoch {
+  const raw: (number | null)[] = candles.map((c, i) => {
+    if (i < n - 1) return null;
+    let hi = -Infinity;
+    let lo = Infinity;
+    for (let j = i - n + 1; j <= i; j++) {
+      hi = Math.max(hi, candles[j].h);
+      lo = Math.min(lo, candles[j].l);
+    }
+    return hi > lo ? ((c.c - lo) / (hi - lo)) * 100 : 50;
+  });
+  const k = smoothK > 1 ? smaNullable(raw, smoothK) : raw;
+  return { k, d: smaNullable(k, d) };
+}

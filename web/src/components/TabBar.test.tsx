@@ -132,6 +132,17 @@ describe("TabBar", () => {
 });
 
 describe("TabBar: sayfa şablonları", () => {
+  it("menü sabit konumlanır (kaydırılan sekme çubuğunda kırpılmaz) ve düğmenin altına yerleşir", async () => {
+    await setup(layout([tab("a", "A")]));
+    const btn = screen.getByRole("button", { name: "Yeni sayfa" });
+    vi.spyOn(btn, "getBoundingClientRect").mockReturnValue({ left: 120, bottom: 64, top: 30, right: 150, width: 30, height: 34, x: 120, y: 30, toJSON: () => ({}) });
+    await userEvent.click(btn);
+    const menu = screen.getByRole("menu");
+    expect(menu.style.position).toBe("fixed");
+    expect(menu.style.top).toBe("64px");
+    expect(menu.style.left).toBe("120px");
+  });
+
   it("'+' menüsü boş sayfa ve üç şablonu listeler; seçilince menü kapanır", async () => {
     await setup(layout([tab("a", "A")]));
     expect(screen.queryByRole("menu")).toBeNull();
