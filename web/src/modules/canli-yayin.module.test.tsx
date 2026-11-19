@@ -22,7 +22,8 @@ describe("canlı yayın modülü", () => {
   it("seçili kanalın canlı yayınını YouTube'dan gömer", () => {
     render(<Comp symbol={null} />);
     const frame = screen.getByTitle("Bloomberg HT canlı yayın") as HTMLIFrameElement;
-    expect(frame.src).toBe(`https://www.youtube.com/embed/live_stream?channel=${CHANNELS[0].id}`);
+    expect(frame.src).toBe(CHANNELS[0].embed);
+    expect(frame.src).toBe("https://www.youtube.com/embed/live_stream?channel=UCApLxl6oYQafxvykuoC2uxQ");
     expect(frame.getAttribute("allow")).toContain("fullscreen");
     expect(frame.hasAttribute("allowfullscreen")).toBe(true);
   });
@@ -30,8 +31,7 @@ describe("canlı yayın modülü", () => {
   it("Ekotürk sekmesine geçince iframe Ekotürk'e döner (tek iframe)", async () => {
     render(<Comp symbol={null} />);
     await userEvent.click(screen.getByRole("tab", { name: "Ekotürk" }));
-    const ek = CHANNELS.find((c) => c.name === "Ekotürk")!;
-    expect((screen.getByTitle("Ekotürk canlı yayın") as HTMLIFrameElement).src).toContain(`channel=${ek.id}`);
+    expect((screen.getByTitle("Ekotürk canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/Sxkj7OuMj-Y");
     expect(document.querySelectorAll("iframe")).toHaveLength(1);
   });
 
@@ -39,8 +39,7 @@ describe("canlı yayın modülü", () => {
     render(<Comp symbol={null} />);
     await userEvent.click(screen.getByRole("tab", { name: "Ekotürk" }));
     const link = screen.getByRole("link", { name: /YouTube'da aç/ });
-    const ek = CHANNELS.find((c) => c.name === "Ekotürk")!;
-    expect(link).toHaveAttribute("href", `https://www.youtube.com/channel/${ek.id}/live`);
+    expect(link).toHaveAttribute("href", "https://www.youtube.com/watch?v=Sxkj7OuMj-Y");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
   });
@@ -59,7 +58,10 @@ describe("canlı yayın modülü", () => {
     expect(screen.getByRole("tab", { name: "Bloomberg HT" })).toHaveAttribute("aria-selected", "true");
   });
 
-  it("kanal kimlikleri YouTube biçiminde (UC + 22 karakter)", () => {
-    for (const c of CHANNELS) expect(c.id).toMatch(/^UC[\w-]{22}$/);
+  it("her kanalın gömme ve açma adresi youtube.com üzerinde", () => {
+    for (const c of CHANNELS) {
+      expect(c.embed).toMatch(/^https:\/\/www\.youtube\.com\/embed\//);
+      expect(c.open).toMatch(/^https:\/\/www\.youtube\.com\//);
+    }
   });
 });

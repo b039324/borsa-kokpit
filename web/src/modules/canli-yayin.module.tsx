@@ -3,10 +3,19 @@ import type { ModuleDef } from "./types";
 
 export const STORAGE_KEY = "kokpit_canli_yayin";
 
-// YouTube kanal kimlikleri (UC…). Canlı yayın, kanalın o an yayında olan videosuna bağlanır.
+// embed: iframe adresi, open: "YouTube'da aç" adresi.
+// Bloomberg HT kanal kimliğiyle (kanalın o anki canlı yayınına bağlanır), Ekotürk sabit canlı yayın videosuyla.
 export const CHANNELS = [
-  { name: "Bloomberg HT", id: "UCApLxl6oYQafxvykuoC2uxQ" },
-  { name: "Ekotürk", id: "UC0RSzZC8Rmu6tVsL93I8s9A" },
+  {
+    name: "Bloomberg HT",
+    embed: "https://www.youtube.com/embed/live_stream?channel=UCApLxl6oYQafxvykuoC2uxQ",
+    open: "https://www.youtube.com/channel/UCApLxl6oYQafxvykuoC2uxQ/live",
+  },
+  {
+    name: "Ekotürk",
+    embed: "https://www.youtube.com/embed/Sxkj7OuMj-Y",
+    open: "https://www.youtube.com/watch?v=Sxkj7OuMj-Y",
+  },
 ] as const;
 
 function loadName(): string {
@@ -30,14 +39,14 @@ function CanliYayin() {
       <div className="chart-bar">
         <div role="tablist" aria-label="Kanal">
           {CHANNELS.map((c) => (
-            <button key={c.id} role="tab" type="button" aria-selected={c.name === ch.name} onClick={() => setName(c.name)}>
+            <button key={c.name} role="tab" type="button" aria-selected={c.name === ch.name} onClick={() => setName(c.name)}>
               {c.name}
             </button>
           ))}
         </div>
         <a
           className="live-open"
-          href={`https://www.youtube.com/channel/${ch.id}/live`}
+          href={ch.open}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -46,9 +55,9 @@ function CanliYayin() {
       </div>
       <div className="chart-area live-area">
         <iframe
-          key={ch.id}
+          key={ch.name}
           title={`${ch.name} canlı yayın`}
-          src={`https://www.youtube.com/embed/live_stream?channel=${ch.id}`}
+          src={ch.embed}
           allow="accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
