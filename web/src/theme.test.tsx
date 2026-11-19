@@ -35,8 +35,16 @@ describe("tema", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
 
-  it("kayıt yoksa sistem açık temayı tercih ediyorsa açık açılır", () => {
+  it("kayıt yoksa sistem açık temayı tercih etse bile koyu açılır", () => {
     stubPrefersLight(true);
+    mount();
+    expect(screen.getByTestId("t")).toHaveTextContent("dark");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
+  it("kullanıcı açık temayı seçip kaydettiyse açık açılır", () => {
+    stubPrefersLight(false);
+    localStorage.setItem(THEME_KEY, "light");
     mount();
     expect(screen.getByTestId("t")).toHaveTextContent("light");
   });

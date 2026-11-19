@@ -10,19 +10,13 @@ interface ThemeValue {
 
 const ThemeContext = createContext<ThemeValue>({ theme: "dark", toggle: () => {} });
 
+// Kayıtlı seçim yoksa her zaman koyu (sistem tercihine bakılmaz).
 function initialTheme(): Theme {
   try {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "dark" || saved === "light") return saved;
   } catch {
     /* depolama kapalı */
-  }
-  try {
-    if (typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: light)").matches) {
-      return "light";
-    }
-  } catch {
-    /* eski tarayıcı */
   }
   return "dark";
 }
