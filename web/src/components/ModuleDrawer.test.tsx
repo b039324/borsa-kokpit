@@ -14,6 +14,7 @@ const defs: ModuleDef[] = [
     title: "Modül A",
     scope: "global",
     defaultSize: { w: 10, h: 6 },
+    minSize: { w: 4, h: 4 },
     component: () => <div>A-içerik</div>,
   },
   {
@@ -21,6 +22,7 @@ const defs: ModuleDef[] = [
     title: "Modül B",
     scope: "stock",
     defaultSize: { w: 10, h: 6 },
+    minSize: { w: 4, h: 4 },
     component: () => <div>B-içerik</div>,
   },
 ];
