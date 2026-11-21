@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SystemTest, type RunFn } from "./SystemTest";
-import { TOKEN_KEY } from "../test/helpers";
+import { TOKEN_KEY, apiMock } from "../test/helpers";
 import { renderWithApp } from "../test/render";
 import type { Report } from "../diagnostics/types";
 
@@ -22,7 +22,10 @@ const report: Report = {
 const readBlob = (b: Blob) =>
   new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsText(b); });
 
-beforeEach(() => localStorage.setItem(TOKEN_KEY, "tok"));
+beforeEach(() => {
+  apiMock(); // AuthProvider oturum doğrulaması gerçek ağa gitmesin (yoksa token silinebilir)
+  localStorage.setItem(TOKEN_KEY, "tok");
+});
 afterEach(() => vi.restoreAllMocks());
 
 function open(run: RunFn) {
