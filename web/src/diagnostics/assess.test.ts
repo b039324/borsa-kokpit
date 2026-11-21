@@ -27,7 +27,49 @@ describe("assessChart", () => {
   });
 });
 
+describe("assessChart: eski / bozuk veri", () => {
+  const NOW = Date.UTC(2026, 10, 20, 10, 0, 0); // ms
+  const lastAgo = (ms: number) => ({ candles: [{ t: Math.floor((NOW - ms) / 1000), o: 1, h: 2, l: 0.5, c: 1.5, v: 1 }] });
+  const MIN = 60_000, HOUR = 3_600_000, DAY = 86_400_000;
+
+  it("seans açıkken 1G'de son mum 45 dk eskiyse uyarır", () => {
+    const r = assessChart(chart(lastAgo(45 * MIN)), "1G", { now: NOW, marketOpen: true });
+    expect(r.status).toBe("warn");
+    expect(r.detail).toContain("45 dk");
+  });
+  it("seans açıkken son mum 5 dk önceyse tamam", () => {
+    expect(assessChart(chart(lastAgo(5 * MIN)), "1G", { now: NOW, marketOpen: true }).status).toBe("ok");
+  });
+  it("seans kapalıyken 1G'de eski mum hata değil", () => {
+    expect(assessChart(chart(lastAgo(10 * HOUR)), "1G", { now: NOW, marketOpen: false }).status).toBe("ok");
+  });
+  it("herhangi bir dönemde son mum 10 günden eskiyse uyarır", () => {
+    const r = assessChart(chart(lastAgo(12 * DAY)), "3A", { now: NOW, marketOpen: false });
+    expect(r.status).toBe("warn");
+    expect(r.detail).toContain("12 gün");
+  });
+  it("son mum 3 gün önceyse (hafta sonu) tamam", () => {
+    expect(assessChart(chart(lastAgo(3 * DAY)), "3A", { now: NOW, marketOpen: false }).status).toBe("ok");
+  });
+  it("fiyat 0 ise uyarır", () => {
+    expect(assessChart(chart({ price: 0 }), "1G").status).toBe("warn");
+  });
+  it("bozuk mum (yüksek < düşük ya da kapanış <= 0) varsa uyarır", () => {
+    const bad = { candles: [{ t: 1, o: 1, h: 1, l: 2, c: 1, v: 1 }] };
+    const r = assessChart(chart(bad), "1G");
+    expect(r.status).toBe("warn");
+    expect(r.detail).toContain("bozuk");
+    expect(assessChart(chart({ candles: [{ t: 1, o: 1, h: 2, l: 1, c: 0, v: 1 }] }), "1G").status).toBe("warn");
+  });
+});
+
 describe("assessQuotes", () => {
+  it("fiyatı 0 olan hisse eksik sayılır", () => {
+    const r = assessQuotes([{ symbol: "A", price: 0, prevClose: 1 }, { symbol: "B", price: 2, prevClose: 1 }], [], 2);
+    expect(r.status).toBe("warn");
+    expect(r.detail).toContain("1/2");
+  });
+
   const q = (price: number | null) => ({ symbol: "X", price, prevClose: 1 });
   it("hiç fiyat gelmediyse hata", () => expect(assessQuotes([], [], 30).status).toBe("fail"));
   it("eksik hisseleri adıyla bildirir", () => {

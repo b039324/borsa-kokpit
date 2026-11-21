@@ -49,7 +49,10 @@ export async function runDiagnostics({ checks, modules, sample = "", now = Date.
     const rs = found as CheckResult[];
     const status = worst(rs.map((r) => r.status));
     const notable = rs.filter((r) => r.status !== "ok");
-    const detail = (notable.length ? notable : rs).map((r) => (rs.length > 1 ? `${r.label}: ${r.detail}` : r.detail)).join(" · ");
+    const detail =
+      notable.length === 0 && rs.length > 1
+        ? `${rs.length}/${rs.length} kontrol tamam`
+        : (notable.length ? notable : rs).map((r) => (rs.length > 1 ? `${r.label}: ${r.detail}` : r.detail)).join(" · ");
     return { ...m, status, detail };
   });
 

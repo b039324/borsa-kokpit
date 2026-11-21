@@ -1,4 +1,5 @@
 import * as realApi from "../api";
+import { isMarketOpen } from "../market/session";
 import { SYMBOL_LISTS } from "../data/symbols";
 import { PERIODS } from "../components/PeriodBar";
 import {
@@ -12,7 +13,7 @@ type Api = typeof realApi;
 const BANK_SAMPLE = "GARAN";
 const CHART_IDS = PERIODS.map((p) => `chart-${p.key}`);
 
-export function buildChecks(token: string, sample: string, api: Api = realApi): Check[] {
+export function buildChecks(token: string, sample: string, api: Api = realApi, clock: () => Date = () => new Date()): Check[] {
   const bist30 = SYMBOL_LISTS.BIST30;
   return [
     { id: "market", label: "Piyasa özeti (endeksler, döviz)", run: async () => assessMarket(await api.getMarket(token)) },
@@ -35,7 +36,11 @@ export function buildChecks(token: string, sample: string, api: Api = realApi): 
     ...PERIODS.map((p) => ({
       id: `chart-${p.key}`,
       label: `Grafik ${p.label} (${sample})`,
-      run: async () => assessChart(await api.getChart(token, sample, p.key), p.label),
+      run: async () => {
+        const data = await api.getChart(token, sample, p.key);
+        const now = clock();
+        return assessChart(data, p.label, { now: now.getTime(), marketOpen: isMarketOpen(now) });
+      },
     })),
     { id: "fundamentals", label: `Temel veriler (${sample})`, run: async () => assessFundamentals(await api.getFundamentals(token, sample)) },
     { id: "financials", label: `Finansal tablo (${sample})`, run: async () => assessFinancials(await api.getFinancials(token, sample), false) },

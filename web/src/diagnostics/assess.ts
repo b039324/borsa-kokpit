@@ -11,14 +11,31 @@ export function assessMarket(items: MarketItem[]): Outcome {
   return filled < items.length ? warn(`${filled}/${items.length} fiyat geldi`) : ok(`${filled}/${items.length} fiyat`);
 }
 
-export function assessChart(d: ChartData, period: string): Outcome {
+export interface ChartContext { now?: number; marketOpen?: boolean }
+
+const MAX_INTRADAY_AGE_MIN = 30; // seans açıkken 1G'de son mum en çok bu kadar eski olabilir
+const MAX_AGE_DAYS = 10; // hafta sonu + resmî tatil payı
+
+export function assessChart(d: ChartData, period: string, ctx: ChartContext = {}): Outcome {
   if (!d.candles || d.candles.length === 0) return fail(`${period}: mum verisi boş`);
+  const broken = d.candles.some((c) => !(c.c > 0) || c.h < c.l);
+  if (broken) return warn(`${period}: bozuk mum var (kapanış ≤ 0 ya da yüksek < düşük)`);
   if (d.price == null) return warn(`${period}: ${d.candles.length} mum var, güncel fiyat yok`);
+  if (!(d.price > 0)) return warn(`${period}: fiyat geçersiz (${d.price})`);
+  if (ctx.now != null) {
+    const ageMs = ctx.now - d.candles[d.candles.length - 1].t * 1000;
+    const ageMin = Math.round(ageMs / 60_000);
+    const ageDays = Math.floor(ageMs / 86_400_000);
+    if (ageDays > MAX_AGE_DAYS) return warn(`${period}: son mum ${ageDays} gün eski`);
+    if (period.toLowerCase() === "1g" && ctx.marketOpen && ageMin > MAX_INTRADAY_AGE_MIN) {
+      return warn(`${period}: seans açık ama son mum ${ageMin} dk eski`);
+    }
+  }
   return ok(`${period}: ${d.candles.length} mum`);
 }
 
 export function assessQuotes(quotes: QuoteItem[], failed: string[], expected: number): Outcome {
-  const priced = quotes.filter((q) => q.price != null).length;
+  const priced = quotes.filter((q) => q.price != null && q.price > 0).length;
   if (priced === 0) return fail("Hiç fiyat gelmedi");
   if (priced < expected) {
     return warn(`${priced}/${expected} fiyat geldi${failed.length ? `; eksik: ${failed.join(", ")}` : ""}`);

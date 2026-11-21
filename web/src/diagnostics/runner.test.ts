@@ -50,6 +50,22 @@ describe("runDiagnostics", () => {
     expect(rep.counts).toEqual({ ok: 2, warn: 1, fail: 0, manual: 0 });
   });
 
+  it("hepsi tamam olan çok kontrollü modül tek satırla özetlenir; sorunluda yalnız sorunlar yazılır", async () => {
+    const mk = (id: string, st: "ok" | "fail"): Check => ({ id, label: `L-${id}`, run: async () => ({ status: st, detail: `d-${id}` }) });
+    const rep = await runDiagnostics({
+      checks: [mk("a", "ok"), mk("b", "ok"), mk("c", "fail")],
+      modules: [
+        { id: "m1", title: "M1", checks: ["a", "b"] },
+        { id: "m2", title: "M2", checks: ["a", "b", "c"] },
+        { id: "m3", title: "M3", checks: ["a"] },
+      ],
+    });
+    const by = Object.fromEntries(rep.modules.map((m) => [m.id, m]));
+    expect(by.m1.detail).toBe("2/2 kontrol tamam");
+    expect(by.m2.detail).toBe("L-c: d-c");
+    expect(by.m3.detail).toBe("d-a");
+  });
+
   it("bağlı kontrol hiç çalışmadıysa modül 'warn' olur (sessiz geçmez)", async () => {
     const rep = await runDiagnostics({ checks: [], modules: [{ id: "m", title: "M", checks: ["yok"] }] });
     expect(rep.modules[0].status).toBe("warn");
@@ -90,13 +106,21 @@ describe("buildChecks", () => {
       getMarket: async () => { calls.push("market"); return [{ price: 1 }]; },
       getChart: async (_t: string, s: string, p: string) => { calls.push(`chart:${s}:${p}`); return { price: 1, candles: [{ t: 1, o: 1, h: 1, l: 1, c: 1, v: 1 }] }; },
     } as never;
-    const checks = buildChecks("tok", "THYAO", api);
+    const checks = buildChecks("tok", "THYAO", api, () => new Date(60_000)); // mum t=1 sn → 59 sn eski
     const run = (id: string) => checks.find((c) => c.id === id)!.run();
     expect((await run("market")).status).toBe("ok");
     const periods = checks.filter((c) => c.id.startsWith("chart-")).map((c) => c.id);
     expect(periods).toEqual(["chart-1g", "chart-1h", "chart-1a", "chart-3a", "chart-6a", "chart-1y", "chart-5y"]);
     expect((await run("chart-1g")).status).toBe("ok");
     expect(calls).toContain("chart:THYAO:1g");
+  });
+
+  it("grafik verisi çok eskiyse chart kontrolü uyarır", async () => {
+    const api = { getChart: async () => ({ price: 1, candles: [{ t: 1, o: 1, h: 1, l: 1, c: 1, v: 1 }] }) } as never;
+    const c = buildChecks("tok", "THYAO", api, () => new Date(Date.UTC(2026, 10, 20))).find((x) => x.id === "chart-3a")!;
+    const r = await c.run();
+    expect(r.status).toBe("warn");
+    expect(r.detail).toContain("gün eski");
   });
 
   it("youtube kontrolü 'manual' döner (otomatik doğrulanamaz)", async () => {
