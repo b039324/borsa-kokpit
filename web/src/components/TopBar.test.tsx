@@ -30,3 +30,13 @@ describe("TopBar tema düğmesi", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
 });
+
+describe("TopBar sistem testi", () => {
+  it("'Sistem testi' düğmesi üst çubukta; tıklayınca pencere açılır", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: "Sistem testi" }));
+    expect(screen.getByRole("dialog", { name: "Sistem testi" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});

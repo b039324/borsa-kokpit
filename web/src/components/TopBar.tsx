@@ -2,6 +2,7 @@ import { useAuth } from "../auth";
 import { useLayout } from "../layout/LayoutProvider";
 import { useTheme } from "../theme";
 import { MarketStrip } from "./MarketStrip";
+import { SystemTest } from "./SystemTest";
 
 interface Props {
   drawerOpen: boolean;
@@ -22,6 +23,7 @@ export function TopBar({ drawerOpen, onToggleDrawer }: Props) {
         <span className={saveState === "error" ? "save-state error" : "save-state muted"} role="status">
           {SAVE_TEXT[saveState]}
         </span>
+        <SystemTest />
         <button
           type="button"
           aria-expanded={drawerOpen}

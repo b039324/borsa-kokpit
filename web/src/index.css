@@ -808,3 +808,20 @@ button:focus-visible {
 .live-area iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
 .live-open { font-size: 12px; white-space: nowrap; }
 .live-note { font-size: 11px; margin: 2px 0 0; }
+
+/* Sistem testi penceresi */
+.st-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.st-dialog { background: var(--panel, #161b22); color: inherit; border: 1px solid var(--border, #2a2f3a); border-radius: 8px; padding: 16px 18px; width: min(720px, 94vw); max-height: 86vh; overflow: auto; }
+.st-dialog h2 { margin: 0 0 8px; font-size: 16px; }
+.st-bar { height: 8px; background: rgba(128,128,128,.25); border-radius: 4px; overflow: hidden; }
+.st-bar > div { height: 100%; background: #3b82f6; transition: width .15s; }
+.st-summary { font-weight: 600; margin: 4px 0; }
+.st-list { list-style: none; padding: 0; margin: 8px 0; font-size: 13px; }
+.st-list li { padding: 3px 0; border-bottom: 1px solid rgba(128,128,128,.15); }
+.st-icon { display: inline-block; width: 1.6em; }
+.st-ok .st-icon { color: #1f9d55; }
+.st-warn .st-icon { color: #d9a400; }
+.st-fail .st-icon { color: #d64545; }
+.st-checks { font-size: 12px; margin: 6px 0; }
+.st-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.st-error { color: #d64545; }
