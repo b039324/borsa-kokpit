@@ -825,3 +825,7 @@ button:focus-visible {
 .st-checks { font-size: 12px; margin: 6px 0; }
 .st-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
 .st-error { color: #d64545; }
+
+.sl-filter { display: flex; gap: 4px; align-items: flex-end; }
+.sl-filter button { padding: 2px 8px; }
+.sl-filter button.on { font-weight: 600; text-decoration: underline; }

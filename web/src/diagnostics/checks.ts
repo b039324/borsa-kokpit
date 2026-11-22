@@ -109,6 +109,7 @@ export const MODULE_CHECKS: Record<string, string[]> = {
   sektor: ["quotes-bist30"],
   sinyal: CHART_IDS,
   tarayici: ["stats-bist30"],
+  "sinyal-listesi": ["stats-bist30"],
   "teknik-bant": CHART_IDS,
   teknik: CHART_IDS,
   temel: ["fundamentals"],
