@@ -13,9 +13,9 @@ describe("canlı yayın modülü", () => {
     expect(def.scope).toBe("global");
   });
 
-  it("iki kanal sekmesi var: Ekotürk ve Bloomberg HT; varsayılan Bloomberg HT", () => {
+  it("iki kanal sekmesi var: Bloomberg HT ve NTV; varsayılan Bloomberg HT", () => {
     render(<Comp symbol={null} />);
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Bloomberg HT", "Ekotürk"]);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Bloomberg HT", "NTV"]);
     expect(screen.getByRole("tab", { name: "Bloomberg HT" })).toHaveAttribute("aria-selected", "true");
   });
 
@@ -28,28 +28,35 @@ describe("canlı yayın modülü", () => {
     expect(frame.hasAttribute("allowfullscreen")).toBe(true);
   });
 
-  it("Ekotürk sekmesine geçince iframe Ekotürk'e döner (tek iframe)", async () => {
+  it("NTV sekmesine geçince iframe NTV'ye döner (tek iframe)", async () => {
     render(<Comp symbol={null} />);
-    await userEvent.click(screen.getByRole("tab", { name: "Ekotürk" }));
-    expect((screen.getByTitle("Ekotürk canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/Sxkj7OuMj-Y");
+    await userEvent.click(screen.getByRole("tab", { name: "NTV" }));
+    expect((screen.getByTitle("NTV canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/pqq5c6k70kk");
     expect(document.querySelectorAll("iframe")).toHaveLength(1);
   });
 
   it("'YouTube'da aç' bağlantısı seçili kanalın canlı sayfasına gider", async () => {
     render(<Comp symbol={null} />);
-    await userEvent.click(screen.getByRole("tab", { name: "Ekotürk" }));
+    await userEvent.click(screen.getByRole("tab", { name: "NTV" }));
     const link = screen.getByRole("link", { name: /YouTube'da aç/ });
-    expect(link).toHaveAttribute("href", "https://www.youtube.com/watch?v=Sxkj7OuMj-Y");
+    expect(link).toHaveAttribute("href", "https://www.youtube.com/watch?v=pqq5c6k70kk");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
   });
 
   it("son seçilen kanal hatırlanır", async () => {
     const a = render(<Comp symbol={null} />);
-    await userEvent.click(screen.getByRole("tab", { name: "Ekotürk" }));
+    await userEvent.click(screen.getByRole("tab", { name: "NTV" }));
     a.unmount();
     render(<Comp symbol={null} />);
-    expect(screen.getByRole("tab", { name: "Ekotürk" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "NTV" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("kaldırılan Ekotürk kanalı eski kayıtta kalsa bile varsayılana döner", () => {
+    localStorage.setItem("kokpit_canli_yayin", "Ekotürk");
+    render(<Comp symbol={null} />);
+    expect(screen.getByRole("tab", { name: "Bloomberg HT" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("tab", { name: "Ekotürk" })).not.toBeInTheDocument();
   });
 
   it("bozuk kayıt varsayılana döner", () => {
