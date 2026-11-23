@@ -4,7 +4,7 @@ import type { ModuleDef } from "./types";
 export const STORAGE_KEY = "kokpit_canli_yayin";
 
 // embed: iframe adresi, open: "YouTube'da aç" adresi.
-// Bloomberg HT kanal kimliğiyle (kanalın o anki canlı yayınına bağlanır), NTV sabit canlı yayın videosuyla. NTV yayın adresini değiştirirse yalnız aşağıdaki video kimliği güncellenir.
+// Bloomberg HT kanal kimliğiyle (kanalın o anki canlı yayınına bağlanır), NTV ve CNBC-e sabit canlı yayın videolarıyla. NTV yayın adresini değiştirirse ilgili kanalın video kimliği güncellenir (kanal kimliği (UC…) biliniyorsa Bloomberg HT gibi live_stream gömmesi kullanılabilir).
 export const CHANNELS = [
   {
     name: "Bloomberg HT",
@@ -15,6 +15,11 @@ export const CHANNELS = [
     name: "NTV",
     embed: "https://www.youtube.com/embed/pqq5c6k70kk",
     open: "https://www.youtube.com/watch?v=pqq5c6k70kk",
+  },
+  {
+    name: "CNBC-e",
+    embed: "https://www.youtube.com/embed/aZ3ycSbSYBA",
+    open: "https://www.youtube.com/watch?v=aZ3ycSbSYBA",
   },
 ] as const;
 
@@ -70,7 +75,7 @@ function CanliYayin() {
 
 const def: ModuleDef = {
   id: "canli-yayin",
-  title: "Canlı yayın (Bloomberg HT / NTV)",
+  title: "Canlı yayın (Bloomberg HT / NTV / CNBC-e)",
   scope: "global",
   defaultSize: { w: 36, h: 26 },
   minSize: { w: 20, h: 16 },

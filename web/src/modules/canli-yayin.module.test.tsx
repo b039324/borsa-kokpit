@@ -13,9 +13,9 @@ describe("canlı yayın modülü", () => {
     expect(def.scope).toBe("global");
   });
 
-  it("iki kanal sekmesi var: Bloomberg HT ve NTV; varsayılan Bloomberg HT", () => {
+  it("üç kanal sekmesi var: Bloomberg HT, NTV ve CNBC-e; varsayılan Bloomberg HT", () => {
     render(<Comp symbol={null} />);
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Bloomberg HT", "NTV"]);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Bloomberg HT", "NTV", "CNBC-e"]);
     expect(screen.getByRole("tab", { name: "Bloomberg HT" })).toHaveAttribute("aria-selected", "true");
   });
 
@@ -32,6 +32,14 @@ describe("canlı yayın modülü", () => {
     render(<Comp symbol={null} />);
     await userEvent.click(screen.getByRole("tab", { name: "NTV" }));
     expect((screen.getByTitle("NTV canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/pqq5c6k70kk");
+    expect(document.querySelectorAll("iframe")).toHaveLength(1);
+  });
+
+  it("CNBC-e sekmesine geçince iframe CNBC-e'ye döner ve açma bağlantısı doğru olur", async () => {
+    render(<Comp symbol={null} />);
+    await userEvent.click(screen.getByRole("tab", { name: "CNBC-e" }));
+    expect((screen.getByTitle("CNBC-e canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/aZ3ycSbSYBA");
+    expect(screen.getByRole("link", { name: /YouTube'da aç/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=aZ3ycSbSYBA");
     expect(document.querySelectorAll("iframe")).toHaveLength(1);
   });
 
