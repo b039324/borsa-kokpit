@@ -161,6 +161,43 @@ describe("Sidebar", () => {
       await vi.waitFor(() => expect(screen.getByLabelText("Favoriler")).toHaveTextContent(/GARAN.*SISE/));
     });
 
+    it("favori hisseler listenin en üstüne taşınır; diğerleri eski sırasını korur", async () => {
+      setupFav(["GARAN"]);
+      await screen.findByLabelText("Favoriler");
+      await vi.waitFor(() => {
+        const names = screen.getAllByRole("button", { name: /^[A-Z]+$/ }).map((b) => b.textContent);
+        expect(names.slice(0, 3)).toEqual(["GARAN", "THYAO", "ASELS"]);
+      });
+    });
+
+    it("birden çok favori listedeki sırasıyla en üstte durur", async () => {
+      setupFav(["GARAN", "THYAO"]);
+      await vi.waitFor(() => {
+        const names = screen.getAllByRole("button", { name: /^[A-Z]+$/ }).map((b) => b.textContent);
+        expect(names.slice(0, 3)).toEqual(["THYAO", "GARAN", "ASELS"]);
+      });
+    });
+
+    it("yıldızdan çıkarılan hisse yerine, listedeki eski sırasına döner", async () => {
+      setupFav(["GARAN"]);
+      const box = await screen.findByLabelText("Favoriler");
+      await userEvent.click(box.querySelector("button.star")!);
+      await vi.waitFor(() => {
+        const names = screen.getAllByRole("button", { name: /^[A-Z]+$/ }).map((b) => b.textContent);
+        expect(names).toEqual(["THYAO", "ASELS", "GARAN"]);
+      });
+    });
+
+    it("favori sıralaması arama süzmesiyle birlikte çalışır", async () => {
+      setupFav(["GARAN"]);
+      await screen.findByLabelText("Favoriler");
+      await userEvent.type(screen.getByLabelText("Hisse ara"), "a");
+      await vi.waitFor(() => {
+        const names = screen.getAllByRole("button", { name: /^[A-Z]+$/ }).map((b) => b.textContent);
+        expect(names.slice(0, 3)).toEqual(["GARAN", "THYAO", "ASELS"]);
+      });
+    });
+
     it("Favoriler bölümünden de hisse seçilebilir", async () => {
       setupFav(["SISE"]);
       const box = await screen.findByLabelText("Favoriler");

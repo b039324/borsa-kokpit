@@ -86,7 +86,9 @@ export function Sidebar({ lists = SYMBOL_LISTS, search = defaultSearch, debounce
 
   const all = lists[tab];
   const q = query.trim().toUpperCase();
-  const items = all.filter((s) => s.includes(q));
+  const matched = all.filter((s) => s.includes(q));
+  // Favoriler listenin en üstünde; kendi aralarında ve diğerleri kendi liste sırasını korur.
+  const items = [...matched.filter((s) => fav.has(s)), ...matched.filter((s) => !fav.has(s))];
 
   // Listede olmayan hisseler için isimle arama: yazmayı bırakınca, eski istek yenisini ezmeden.
   const term = query.trim();
