@@ -4,7 +4,7 @@ import type { ModuleDef } from "./types";
 export const STORAGE_KEY = "kokpit_canli_yayin";
 
 // embed: iframe adresi, open: "YouTube'da aç" adresi.
-// Bloomberg HT kanal kimliğiyle (kanalın o anki canlı yayınına bağlanır), NTV ve CNBC-e sabit canlı yayın videolarıyla. NTV yayın adresini değiştirirse ilgili kanalın video kimliği güncellenir (kanal kimliği (UC…) biliniyorsa Bloomberg HT gibi live_stream gömmesi kullanılabilir).
+// Üç kanal da kanal kimliğiyle (UC…) gömülür: kanalın o anki canlı yayınına bağlanır, yayın adresi değişse de çalışır.
 export const CHANNELS = [
   {
     name: "Bloomberg HT",
@@ -13,13 +13,13 @@ export const CHANNELS = [
   },
   {
     name: "NTV",
-    embed: "https://www.youtube.com/embed/pqq5c6k70kk",
-    open: "https://www.youtube.com/watch?v=pqq5c6k70kk",
+    embed: "https://www.youtube.com/embed/live_stream?channel=UC9TDTjbOjFB9jADmPhSAPsw",
+    open: "https://www.youtube.com/channel/UC9TDTjbOjFB9jADmPhSAPsw/live",
   },
   {
     name: "CNBC-e",
-    embed: "https://www.youtube.com/embed/aZ3ycSbSYBA",
-    open: "https://www.youtube.com/watch?v=aZ3ycSbSYBA",
+    embed: "https://www.youtube.com/embed/live_stream?channel=UCaO-M1dXacMwtyg0Pvovk4w",
+    open: "https://www.youtube.com/channel/UCaO-M1dXacMwtyg0Pvovk4w/live",
   },
 ] as const;
 

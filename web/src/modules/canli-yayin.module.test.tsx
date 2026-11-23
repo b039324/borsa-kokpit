@@ -31,15 +31,15 @@ describe("canlı yayın modülü", () => {
   it("NTV sekmesine geçince iframe NTV'ye döner (tek iframe)", async () => {
     render(<Comp symbol={null} />);
     await userEvent.click(screen.getByRole("tab", { name: "NTV" }));
-    expect((screen.getByTitle("NTV canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/pqq5c6k70kk");
+    expect((screen.getByTitle("NTV canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/live_stream?channel=UC9TDTjbOjFB9jADmPhSAPsw");
     expect(document.querySelectorAll("iframe")).toHaveLength(1);
   });
 
   it("CNBC-e sekmesine geçince iframe CNBC-e'ye döner ve açma bağlantısı doğru olur", async () => {
     render(<Comp symbol={null} />);
     await userEvent.click(screen.getByRole("tab", { name: "CNBC-e" }));
-    expect((screen.getByTitle("CNBC-e canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/aZ3ycSbSYBA");
-    expect(screen.getByRole("link", { name: /YouTube'da aç/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=aZ3ycSbSYBA");
+    expect((screen.getByTitle("CNBC-e canlı yayın") as HTMLIFrameElement).src).toBe("https://www.youtube.com/embed/live_stream?channel=UCaO-M1dXacMwtyg0Pvovk4w");
+    expect(screen.getByRole("link", { name: /YouTube'da aç/ })).toHaveAttribute("href", "https://www.youtube.com/channel/UCaO-M1dXacMwtyg0Pvovk4w/live");
     expect(document.querySelectorAll("iframe")).toHaveLength(1);
   });
 
@@ -47,7 +47,7 @@ describe("canlı yayın modülü", () => {
     render(<Comp symbol={null} />);
     await userEvent.click(screen.getByRole("tab", { name: "NTV" }));
     const link = screen.getByRole("link", { name: /YouTube'da aç/ });
-    expect(link).toHaveAttribute("href", "https://www.youtube.com/watch?v=pqq5c6k70kk");
+    expect(link).toHaveAttribute("href", "https://www.youtube.com/channel/UC9TDTjbOjFB9jADmPhSAPsw/live");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
   });
@@ -71,6 +71,13 @@ describe("canlı yayın modülü", () => {
     localStorage.setItem("kokpit_canli_yayin", "yok-boyle-kanal");
     render(<Comp symbol={null} />);
     expect(screen.getByRole("tab", { name: "Bloomberg HT" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("üç kanal da kanal kimliğiyle gömülür (yayın adresi değişse de çalışır)", () => {
+    for (const c of CHANNELS) {
+      expect(c.embed).toMatch(/^https:\/\/www\.youtube\.com\/embed\/live_stream\?channel=UC[\w-]{22}$/);
+      expect(c.open).toMatch(/^https:\/\/www\.youtube\.com\/channel\/UC[\w-]{22}\/live$/);
+    }
   });
 
   it("her kanalın gömme ve açma adresi youtube.com üzerinde", () => {
