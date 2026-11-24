@@ -40,3 +40,15 @@ describe("TopBar sistem testi", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+describe("TopBar uygulama yükleme", () => {
+  it("tarayıcı kurulum izni verince 'Uygulamayı yükle' düğmesi çıkar", async () => {
+    setup();
+    expect(screen.queryByRole("button", { name: "Uygulamayı yükle" })).not.toBeInTheDocument();
+    const e = new Event("beforeinstallprompt", { cancelable: true }) as any;
+    e.prompt = async () => {};
+    e.userChoice = Promise.resolve({ outcome: "dismissed" });
+    window.dispatchEvent(e);
+    expect(await screen.findByRole("button", { name: "Uygulamayı yükle" })).toBeInTheDocument();
+  });
+});
