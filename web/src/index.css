@@ -829,3 +829,9 @@ button:focus-visible {
 .sl-filter { display: flex; gap: 4px; align-items: flex-end; }
 .sl-filter button { padding: 2px 8px; }
 .sl-filter button.on { font-weight: 600; text-decoration: underline; }
+
+.bot-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.bot-sum > div { display: flex; flex-direction: column; }
+.bot-h { margin: 10px 0 4px; font-size: 0.9em; }
+.bot-settings { margin-top: 10px; }
+.bot-settings summary { cursor: pointer; }
