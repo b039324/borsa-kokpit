@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  DEFAULT_CONFIG, newState, runBot, shouldAutoRun, summarize, turkeyDay,
+  DEFAULT_CONFIG, newState, runBot, sessionIncomplete, shouldAutoRun, summarize, turkeyDay,
   type BotConfig, type BotState,
 } from "../bot/engine";
 import { SYMBOL_LISTS } from "../data/symbols";
@@ -79,7 +79,8 @@ function AlSatBotu() {
 
   const scan = useCallback(() => {
     if (!statsRef.current.length) return;
-    setState((s) => runBot(s, statsRef.current, turkeyDay(new Date())).state);
+    const now = new Date();
+    setState((s) => runBot(s, statsRef.current, turkeyDay(now), { sessionOpen: sessionIncomplete(now) }).state);
   }, []);
 
   // Günlük otomatik tarama: iş günü 18:15'ten sonra, o gün çalışmadıysa (sayfa açıkken).
@@ -135,6 +136,15 @@ function AlSatBotu() {
           {loading && !stats.length ? "Veri yükleniyor…" : error && !stats.length ? error : `Son tarama: ${state.lastRunDate ?? "yok"} · otomatik: iş günü 18:15'ten sonra`}
         </span>
       </div>
+
+      {state.lastScan && (
+        <p className="muted" data-testid="bot-scan">
+          Son tarama ({state.lastScan.date}): {state.lastScan.total} hisse, {state.lastScan.al} AL sinyali
+          {state.lastScan.held ? ` (${state.lastScan.held} zaten portföyde)` : ""} → RSI'dan {state.lastScan.rsiOut}
+          {state.lastScan.volumeSkipped ? ", hacim filtresi seans bitince uygulanır" : `, hacimden ${state.lastScan.volumeOut}`} elendi →{" "}
+          {state.lastScan.candidates} aday, {state.lastScan.bought} alındı.
+        </p>
+      )}
 
       <h4 className="bot-h">Açık pozisyonlar ({state.positions.length}/{cfg.maxPositions})</h4>
       {state.positions.length === 0 ? (
@@ -200,7 +210,7 @@ function AlSatBotu() {
           </label>
         </div>
         <p className="muted">
-          Alış: sinyal AL + RSI sınırın altında{cfg.requireVolume ? " + hacim ortalamanın üstünde" : ""}. Satış: zarar durdur → kâr al → SAT sinyali → süre.
+          Alış: sinyal AL + RSI sınırın altında{cfg.requireVolume ? " + hacim ortalamanın üstünde (seans açıkken uygulanmaz, çünkü gün hacmi henüz kısmidir)" : ""}. Satış: zarar durdur → kâr al → SAT sinyali → süre.
         </p>
       </details>
 

@@ -69,6 +69,27 @@ describe("al-sat botu modülü (simülasyon)", () => {
     expect(saved()!.lastRunDate).toBe("2026-11-26");
   });
 
+  it("gün içinde (seans açık) hacim ortalamanın altında görünse de AL hissesi alınır", async () => {
+    // varsayılan saat: Perşembe 13:00 TR, seans açık
+    setup({ [S1]: { ...AL(40), volume: 200, avgVolume: 1000 } });
+    await vi.waitFor(() => expect(screen.getByRole("button", { name: "Şimdi tara" })).toBeEnabled());
+    await userEvent.click(screen.getByRole("button", { name: "Şimdi tara" }));
+    expect(await screen.findAllByTestId("bot-pos")).toHaveLength(1);
+    expect(screen.getByTestId("bot-scan")).toHaveTextContent(/hacim filtresi seans bitince/i);
+  });
+
+  it("seans kapalıyken düşük hacimli AL elenir ve özet nedenini söyler", async () => {
+    vi.setSystemTime(new Date("2026-11-26T16:00:00Z")); // 19:00 TR, seans kapalı
+    localStorage.setItem(BOT_KEY, JSON.stringify({ ...newState(DEFAULT_CONFIG, "2026-11-20"), lastRunDate: "2026-11-26" }));
+    setup({ [S1]: { ...AL(40), volume: 200, avgVolume: 1000 } });
+    await vi.waitFor(() => expect(screen.getByRole("button", { name: "Şimdi tara" })).toBeEnabled());
+    await userEvent.click(screen.getByRole("button", { name: "Şimdi tara" }));
+    const scan = await screen.findByTestId("bot-scan");
+    expect(scan).toHaveTextContent("1 AL sinyali");
+    expect(scan).toHaveTextContent("hacimden 1");
+    expect(screen.queryAllByTestId("bot-pos")).toHaveLength(0);
+  });
+
   it("veri gelmeden 'Şimdi tara' kapalıdır", async () => {
     apiMock({ stats: {} });
     render(

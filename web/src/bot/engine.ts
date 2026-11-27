@@ -52,6 +52,19 @@ export interface Trade {
   pnlPct: number; // alış maliyetine göre %
 }
 
+// Son taramanın özeti: "neden almadı"yı göstermek için.
+export interface ScanInfo {
+  date: string;
+  total: number; // değerlendirilen hisse
+  al: number; // sinyali AL olanlar
+  held: number; // bunlardan zaten portföyde olan / aynı gün satılan
+  rsiOut: number; // RSI verisi yok veya sınırın üstünde
+  volumeOut: number; // hacim ortalamanın altında
+  candidates: number; // tüm filtreleri geçen
+  bought: number; // gerçekten alınan (yer/nakit sınırından sonra)
+  volumeSkipped: boolean; // seans açıkken hacim filtresi uygulanmadı
+}
+
 export interface BotState {
   config: BotConfig;
   cash: number;
@@ -59,6 +72,7 @@ export interface BotState {
   trades: Trade[];
   lastRunDate: string | null;
   startedAt: string;
+  lastScan?: ScanInfo;
 }
 
 export function newState(config: BotConfig = DEFAULT_CONFIG, startedAt: string): BotState {
@@ -92,6 +106,16 @@ export function shouldAutoRun(state: BotState, now: Date): boolean {
   return state.lastRunDate !== turkeyDay(now);
 }
 
+// Seans bitmeden (hafta içi 10:00–18:15 TR) "hacim" günün şimdiye kadarki kısmi hacmidir;
+// 20 günlük tam gün ortalamasıyla kıyaslanamaz.
+export function sessionIncomplete(now: Date): boolean {
+  const tr = new Date(now.getTime() + TR_OFFSET_MS);
+  const day = tr.getUTCDay();
+  if (day === 0 || day === 6) return false;
+  const min = tr.getUTCHours() * 60 + tr.getUTCMinutes();
+  return min >= 10 * 60 && min < 18 * 60 + 15;
+}
+
 function sellReason(p: Position, s: StatsItem, price: number, today: string, c: BotConfig): SellReason | null {
   if (price <= (p.buyPrice * (100 - c.stopPct)) / 100) return "Zarar durdur";
   if (price >= (p.buyPrice * (100 + c.takePct)) / 100) return "Kâr al";
@@ -104,10 +128,15 @@ export interface RunResult {
   state: BotState;
   bought: string[];
   sold: Trade[];
+  scan: ScanInfo;
+}
+
+export interface RunOptions {
+  sessionOpen?: boolean; // true: hacim kısmi, filtre uygulanmaz
 }
 
 // Bir tarama turu: önce satar (nakit ve yer açılır), sonra alır. Girdi durumu değişmez.
-export function runBot(prev: BotState, stats: StatsItem[], today: string): RunResult {
+export function runBot(prev: BotState, stats: StatsItem[], today: string, opts: RunOptions = {}): RunResult {
   const c = prev.config;
   const bySym = new Map(stats.map((s) => [s.symbol, s]));
   let cash = prev.cash;
@@ -137,16 +166,19 @@ export function runBot(prev: BotState, stats: StatsItem[], today: string): RunRe
   }
 
   const heldOrSold = new Set([...positions.map((p) => p.symbol), ...sold.map((t) => t.symbol)]);
-  const candidates = stats
-    .map((s) => ({ s, sig: signalFromStats(s) }))
-    .filter(({ s, sig }) => {
-      if (sig.verdict !== "AL" || typeof s.price !== "number" || s.price <= 0) return false;
-      if (heldOrSold.has(s.symbol)) return false;
-      if (typeof s.rsi !== "number" || s.rsi >= c.rsiMax) return false;
-      if (c.requireVolume && (typeof s.volume !== "number" || typeof s.avgVolume !== "number" || s.volume < s.avgVolume)) return false;
-      return true;
-    })
-    .sort((a, b) => b.sig.score - a.sig.score || a.s.symbol.localeCompare(b.s.symbol));
+  const useVolume = c.requireVolume && !opts.sessionOpen;
+  let al = 0, held = 0, rsiOut = 0, volumeOut = 0;
+  const candidates: { s: StatsItem; sig: ReturnType<typeof signalFromStats> }[] = [];
+  for (const s of stats) {
+    const sig = signalFromStats(s);
+    if (sig.verdict !== "AL" || typeof s.price !== "number" || s.price <= 0) continue;
+    al++;
+    if (heldOrSold.has(s.symbol)) { held++; continue; }
+    if (typeof s.rsi !== "number" || s.rsi >= c.rsiMax) { rsiOut++; continue; }
+    if (useVolume && (typeof s.volume !== "number" || typeof s.avgVolume !== "number" || s.volume < s.avgVolume)) { volumeOut++; continue; }
+    candidates.push({ s, sig });
+  }
+  candidates.sort((a, b) => b.sig.score - a.sig.score || a.s.symbol.localeCompare(b.s.symbol));
 
   for (const { s } of candidates) {
     if (positions.length >= c.maxPositions) break;
@@ -161,7 +193,11 @@ export function runBot(prev: BotState, stats: StatsItem[], today: string): RunRe
     bought.push(s.symbol);
   }
 
-  return { state: { ...prev, cash, positions, trades, lastRunDate: today }, bought, sold };
+  const scan: ScanInfo = {
+    date: today, total: stats.length, al, held, rsiOut, volumeOut,
+    candidates: candidates.length, bought: bought.length, volumeSkipped: c.requireVolume && !!opts.sessionOpen,
+  };
+  return { state: { ...prev, cash, positions, trades, lastRunDate: today, lastScan: scan }, bought, sold, scan };
 }
 
 // Güncel fiyat yoksa alış fiyatıyla değerlenir.

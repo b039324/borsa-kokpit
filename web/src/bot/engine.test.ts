@@ -6,6 +6,7 @@ import {
   equity,
   newState,
   runBot,
+  sessionIncomplete,
   shouldAutoRun,
   summarize,
   type BotState,
@@ -215,5 +216,41 @@ describe("bot motoru: özet ve zamanlama", () => {
     expect(shouldAutoRun(s, new Date("2026-11-28T15:20:00Z"))).toBe(false); // Cumartesi
     expect(shouldAutoRun({ ...s, lastRunDate: T }, new Date("2026-11-26T15:30:00Z"))).toBe(false);
     expect(shouldAutoRun({ ...s, lastRunDate: "2026-11-25" }, new Date("2026-11-26T15:30:00Z"))).toBe(true);
+  });
+});
+
+describe("bot motoru: gün içi hacim ve tarama özeti", () => {
+  it("seans bitmeden (10:00–18:15 TR) hacim henüz tamamlanmamıştır; öncesi, sonrası ve hafta sonu tamdır", () => {
+    expect(sessionIncomplete(new Date("2026-11-27T10:21:00Z"))).toBe(true); // 13:21 TR, Cuma
+    expect(sessionIncomplete(new Date("2026-11-27T07:00:00Z"))).toBe(true); // 10:00 TR
+    expect(sessionIncomplete(new Date("2026-11-27T06:50:00Z"))).toBe(false); // 09:50 TR, açılış öncesi
+    expect(sessionIncomplete(new Date("2026-11-27T15:20:00Z"))).toBe(false); // 18:20 TR
+    expect(sessionIncomplete(new Date("2026-11-28T10:21:00Z"))).toBe(false); // Cumartesi
+  });
+
+  it("seans açıkken (kısmi hacim) hacim filtresi uygulanmaz; kapalıyken uygulanır", () => {
+    const low = al("AAA", 110, { volume: 300, avgVolume: 1000 });
+    expect(runBot(fresh(), [low], T).bought).toEqual([]);
+    const r = runBot(fresh(), [low], T, { sessionOpen: true });
+    expect(r.bought).toEqual(["AAA"]);
+    expect(r.scan.volumeSkipped).toBe(true);
+  });
+
+  it("tarama özeti: toplam, AL sayısı, RSI ve hacimden elenenler, aday ve alınan sayısı", () => {
+    const stats = [
+      al("OK1", 110), // aday
+      al("RSI", 110, { rsi: null }), // RSI verisi yok → elenir
+      al("VOL", 110, { volume: 100, avgVolume: 1000 }), // hacim düşük → elenir
+      tut("TUT"),
+    ];
+    const r = runBot(fresh(), stats, T);
+    expect(r.scan).toMatchObject({ total: 4, al: 3, rsiOut: 1, volumeOut: 1, candidates: 1, bought: 1, volumeSkipped: false });
+    expect(r.state.lastScan).toMatchObject({ date: T, total: 4, al: 3 });
+  });
+
+  it("zaten portföyde olan veya aynı gün satılan AL'lar özette 'portföyde' sayılır", () => {
+    const s = withPos(fresh(), "AAA", 100, 100);
+    const r = runBot(s, [al("AAA", 105)], T);
+    expect(r.scan).toMatchObject({ al: 1, held: 1, candidates: 0, bought: 0 });
   });
 });
